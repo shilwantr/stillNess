@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Outer liquid breathing ring -->
+    <path
+        android:strokeWidth="2.5"
+        android:pathData="M54,26 C69.46,26 82,38.54 82,54 C82,69.46 69.46,82 54,82 C38.54,82 26,69.46 26,54 C26,38.54 38.54,26 54,26 Z">
+        <aapt:attr name="android:strokeColor">
+            <gradient
+                android:startX="26"
+                android:startY="26"
+                android:endX="82"
+                android:endY="82"
+                android:type="linear">
+                <item android:color="#8067E8F9" android:offset="0.0" />
+                <item android:color="#40A78BFA" android:offset="0.5" />
+                <item android:color="#8038BDF8" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- Inner glowing liquid orb core -->
+    <path
+        android:pathData="M54,34 C65.05,34 74,42.95 74,54 C74,65.05 65.05,74 54,74 C42.95,74 34,65.05 34,54 C34,42.95 42.95,34 54,34 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="34"
+                android:startY="34"
+                android:endX="74"
+                android:endY="74"
+                android:type="linear">
+                <item android:color="#CC38BDF8" android:offset="0.0" />
+                <item android:color="#99818CF8" android:offset="0.5" />
+                <item android:color="#CCF472B6" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- Serene wellness lotus droplet center -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,42 C51,47 46,52 46,56 C46,60.42 49.58,64 54,64 C58.42,64 62,60.42 62,56 C62,52 57,47 54,42 Z" />
+</vector>

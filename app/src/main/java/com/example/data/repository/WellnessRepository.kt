@@ -1,0 +1,419 @@
+package com.example.data.repository
+
+import android.content.Context
+import com.example.data.local.dao.WellnessDao
+import com.example.data.local.entities.AppointmentEntity
+import com.example.data.local.entities.DailyMetricEntity
+import com.example.data.local.entities.FavoriteQuoteEntity
+import com.example.data.local.entities.PaymentRecordEntity
+import com.example.data.local.entities.WaterEntryEntity
+import com.example.data.local.entities.WellnessSessionEntity
+import com.example.domain.model.AmbientSound
+import com.example.domain.model.MeditationTrack
+import com.example.domain.model.Quote
+import com.example.domain.model.Therapist
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+
+class WellnessRepository(private val dao: WellnessDao) {
+
+    private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+
+    companion object {
+        private const val QUOTE_PREFS_NAME = "still_quote_rotation_prefs"
+        private const val KEY_LAST_QUOTE_INDEX = "last_quote_index"
+    }
+
+    fun getTodayDate(): String = dateFormat.format(Date())
+
+    fun getDailyMetricFlow(date: String = getTodayDate()): Flow<DailyMetricEntity?> {
+        return dao.getDailyMetricFlow(date)
+    }
+
+    fun getRecentMetricsFlow(days: Int = 14): Flow<List<DailyMetricEntity>> {
+        return dao.getRecentMetricsFlow(days)
+    }
+
+    suspend fun getOrCreateTodayMetric(): DailyMetricEntity {
+        val today = getTodayDate()
+        val existing = dao.getDailyMetric(today)
+        if (existing != null) {
+            return existing
+        }
+        val newMetric = DailyMetricEntity(
+            date = today,
+            activeCalories = 486,
+            totalCalories = 2120,
+            steps = 7842,
+            stepGoal = 10000,
+            waterMl = 1600,
+            waterGoalMl = 2500,
+            exerciseMinutes = 42
+        )
+        dao.insertOrUpdateMetric(newMetric)
+        return newMetric
+    }
+
+    suspend fun seedInitialDataIfEmpty() {
+        val today = getTodayDate()
+        val existingToday = dao.getDailyMetric(today)
+        if (existingToday == null) {
+            val pastDaysData = listOf(
+                Pair(410, 6800), // 6 days ago (Mon)
+                Pair(440, 7200), // 5 days ago (Tue)
+                Pair(486, 7842), // Today (Wed)
+                Pair(510, 8300), // 3 days ago
+                Pair(540, 8900), // 2 days ago
+                Pair(710, 11400),// 1 day ago (Sat peak)
+                Pair(620, 9600)  // Sun
+            )
+            for (i in 6 downTo 0) {
+                val tempCal = Calendar.getInstance()
+                tempCal.add(Calendar.DAY_OF_YEAR, -i)
+                val dStr = dateFormat.format(tempCal.time)
+                val idx = 6 - i
+                val (burn, steps) = pastDaysData[idx]
+                val metric = DailyMetricEntity(
+                    date = dStr,
+                    activeCalories = burn,
+                    totalCalories = 1700 + burn,
+                    steps = steps,
+                    stepGoal = 10000,
+                    waterMl = if (i == 0) 1600 else (1800 + (idx * 120) % 700),
+                    waterGoalMl = 2500,
+                    exerciseMinutes = 20 + idx * 5
+                )
+                dao.insertOrUpdateMetric(metric)
+            }
+
+            // Seed initial sample appointments
+            dao.insertAppointment(
+                AppointmentEntity(
+                    id = "apt_1",
+                    therapistId = "th_1",
+                    therapistName = "Dr. Elena Vance, Psy.D.",
+                    therapistTitle = "Licensed Clinical Psychologist",
+                    clientName = "You",
+                    dateSlot = "Today",
+                    timeSlot = "3:30 PM",
+                    status = "UPCOMING",
+                    fee = 85.0,
+                    callEligible = true
+                )
+            )
+            dao.insertAppointment(
+                AppointmentEntity(
+                    id = "apt_2",
+                    therapistId = "th_2",
+                    therapistName = "Marcus Thorne, LMFT",
+                    therapistTitle = "Somatic & Mindfulness Therapist",
+                    clientName = "You",
+                    dateSlot = "Tomorrow",
+                    timeSlot = "11:00 AM",
+                    status = "UPCOMING",
+                    fee = 75.0,
+                    callEligible = false
+                )
+            )
+
+            // Seed initial water entries for today
+            dao.insertWaterEntry(WaterEntryEntity(date = today, amountMl = 350, vessel = "Morning Glass"))
+            dao.insertWaterEntry(WaterEntryEntity(date = today, amountMl = 500, vessel = "Water Bottle"))
+            dao.insertWaterEntry(WaterEntryEntity(date = today, amountMl = 750, vessel = "Tumbler"))
+
+            // Seed sample past payment
+            dao.insertPayment(
+                PaymentRecordEntity(
+                    id = "pay_001",
+                    title = "Therapy Consultation - Dr. Elena Vance",
+                    amount = 85.0,
+                    status = "CONFIRMED",
+                    paymentMethod = "Google Pay (ending 4821)",
+                    appointmentId = "apt_1"
+                )
+            )
+        }
+    }
+
+    suspend fun addWater(amountMl: Int, vessel: String = "Glass") {
+        val today = getTodayDate()
+        val current = dao.getDailyMetric(today) ?: getOrCreateTodayMetric()
+        val updated = current.copy(waterMl = (current.waterMl + amountMl).coerceAtLeast(0))
+        dao.insertOrUpdateMetric(updated)
+        dao.insertWaterEntry(WaterEntryEntity(date = today, amountMl = amountMl, vessel = vessel))
+    }
+
+    suspend fun undoLatestWater() {
+        val today = getTodayDate()
+        val current = dao.getDailyMetric(today) ?: return
+        dao.deleteLatestWaterEntry(today)
+        val newWater = (current.waterMl - 250).coerceAtLeast(0)
+        dao.insertOrUpdateMetric(current.copy(waterMl = newWater))
+    }
+
+    suspend fun updateSteps(deltaSteps: Int) {
+        val today = getTodayDate()
+        val current = dao.getDailyMetric(today) ?: getOrCreateTodayMetric()
+        val newSteps = (current.steps + deltaSteps).coerceAtLeast(0)
+        val newActiveBurn = (newSteps * 0.045f).toInt() + 130
+        val updated = current.copy(
+            steps = newSteps,
+            activeCalories = newActiveBurn,
+            totalCalories = 1650 + newActiveBurn
+        )
+        dao.insertOrUpdateMetric(updated)
+    }
+
+    suspend fun recordSession(type: String, title: String, durationSeconds: Int) {
+        val today = getTodayDate()
+        dao.insertSession(
+            WellnessSessionEntity(
+                date = today,
+                type = type,
+                title = title,
+                durationSeconds = durationSeconds,
+                completed = true
+            )
+        )
+    }
+
+    fun getAllSessionsFlow(): Flow<List<WellnessSessionEntity>> = dao.getAllSessionsFlow()
+    fun getWaterEntriesFlow(): Flow<List<WaterEntryEntity>> = dao.getWaterEntriesForDate(getTodayDate())
+    fun getAllAppointmentsFlow(): Flow<List<AppointmentEntity>> = dao.getAllAppointmentsFlow()
+    fun getAllPaymentsFlow(): Flow<List<PaymentRecordEntity>> = dao.getAllPaymentsFlow()
+    fun getFavoriteQuotesFlow(): Flow<List<FavoriteQuoteEntity>> = dao.getAllFavoriteQuotesFlow()
+
+    suspend fun bookAppointment(appointment: AppointmentEntity, paymentMethod: String) {
+        dao.insertAppointment(appointment)
+        dao.insertPayment(
+            PaymentRecordEntity(
+                id = "pay_" + System.currentTimeMillis(),
+                title = "Therapy Appointment - ${appointment.therapistName}",
+                amount = appointment.fee,
+                status = "CONFIRMED",
+                paymentMethod = paymentMethod,
+                appointmentId = appointment.id
+            )
+        )
+    }
+
+    suspend fun cancelAppointment(appointmentId: String) {
+        dao.updateAppointmentStatus(appointmentId, "CANCELLED")
+    }
+
+    suspend fun toggleFavoriteQuote(quote: Quote) {
+        if (quote.isFavorite) {
+            dao.removeFavoriteQuote(quote.id)
+        } else {
+            dao.insertFavoriteQuote(
+                FavoriteQuoteEntity(
+                    id = quote.id,
+                    text = quote.text,
+                    author = quote.author
+                )
+            )
+        }
+    }
+
+    // Curated Therapists Directory
+    fun getCuratedTherapists(): List<Therapist> {
+        return listOf(
+            Therapist(
+                id = "th_1",
+                name = "Dr. Elena Vance, Psy.D.",
+                title = "Licensed Clinical Psychologist",
+                specialty = "Anxiety, High-Performance Burnout & Somatic Regulation",
+                credentials = "Ph.D. Columbia University • 12 yrs exp",
+                yearsExperience = 12,
+                languages = listOf("English", "Spanish"),
+                bio = "Specializing in evidence-based cognitive and nervous system stabilization for professionals experiencing stress, grief, and life transitions.",
+                rating = 4.98f,
+                reviewCount = 142,
+                hourlyRate = 85.0,
+                isVerified = true,
+                isOnline = true,
+                availableSlots = listOf("Today 3:30 PM", "Tomorrow 10:00 AM", "Friday 2:00 PM")
+            ),
+            Therapist(
+                id = "th_2",
+                name = "Marcus Thorne, LMFT",
+                title = "Mindfulness & Somatic Specialist",
+                specialty = "Nervous System Reset, Breathwork & Trauma-Informed Care",
+                credentials = "M.A. Stanford • Licensed MFT • 9 yrs exp",
+                yearsExperience = 9,
+                languages = listOf("English"),
+                bio = "Integrating somatic breath pacing with mindful inquiry to release trapped tension, restore parasympathetic balance, and improve sleep.",
+                rating = 4.95f,
+                reviewCount = 98,
+                hourlyRate = 75.0,
+                isVerified = true,
+                isOnline = true,
+                availableSlots = listOf("Today 5:00 PM", "Tomorrow 11:00 AM", "Monday 4:00 PM")
+            ),
+            Therapist(
+                id = "th_3",
+                name = "Dr. Maya Lin, Ph.D.",
+                title = "Mind-Body Health Consultant",
+                specialty = "Insomnia, Emotional Resilience & Cognitive Grounding",
+                credentials = "Ph.D. UC Berkeley • Board Certified • 15 yrs exp",
+                yearsExperience = 15,
+                languages = listOf("English", "Mandarin"),
+                bio = "Dedicated to holistic mental wellbeing through restorative relaxation techniques, bio-neurofeedback principles, and empathetic counseling.",
+                rating = 4.99f,
+                reviewCount = 210,
+                hourlyRate = 95.0,
+                isVerified = true,
+                isOnline = false,
+                availableSlots = listOf("Tomorrow 1:30 PM", "Thursday 3:00 PM")
+            )
+        )
+    }
+
+    private val firestore by lazy { FirebaseFirestore.getInstance() }
+
+    /**
+     * Guided Meditation Library - Streamed live from Firebase Firestore DB.
+     */
+    fun getMeditationTracksFlow(): Flow<List<MeditationTrack>> = callbackFlow {
+        val listener = firestore.collection("meditation_tracks")
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(emptyList())
+                    return@addSnapshotListener
+                }
+                if (snapshot != null) {
+                    val tracks = snapshot.documents.mapNotNull { doc ->
+                        doc.toObject(MeditationTrack::class.java)?.copy(id = doc.id)
+                    }
+                    trySend(tracks)
+                }
+            }
+        awaitClose { listener.remove() }
+    }
+
+    /**
+     * Relaxing Music Library - Streamed live from Firebase Firestore DB.
+     */
+    fun getRelaxingMusicFlow(): Flow<List<MeditationTrack>> = callbackFlow {
+        val listener = firestore.collection("relaxing_music")
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(emptyList())
+                    return@addSnapshotListener
+                }
+                if (snapshot != null) {
+                    val tracks = snapshot.documents.mapNotNull { doc ->
+                        doc.toObject(MeditationTrack::class.java)?.copy(id = doc.id)
+                    }
+                    trySend(tracks)
+                }
+            }
+        awaitClose { listener.remove() }
+    }
+
+    /**
+     * Ambient Sound Library - Streamed live from Firebase Firestore DB.
+     */
+    fun getAmbientSoundsFlow(): Flow<List<AmbientSound>> = callbackFlow {
+        val listener = firestore.collection("ambient_sounds")
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(emptyList())
+                    return@addSnapshotListener
+                }
+                if (snapshot != null) {
+                    val sounds = snapshot.documents.mapNotNull { doc ->
+                        doc.toObject(AmbientSound::class.java)?.copy(id = doc.id)
+                    }
+                    trySend(sounds)
+                }
+            }
+        awaitClose { listener.remove() }
+    }
+
+    /**
+     * Inspirational Stillness Quotes Pool.
+     * Note for Next Phase DB Integration:
+     * Currently backed by an in-memory curated collection + SharedPreferences rotation pointer
+     * so the top card quote changes every time the user opens the app. When the dedicated
+     * Quotes DB table/remote sync is added in the next phase, replace `getCuratedQuotes()` inside
+     * `getNextQuoteOnAppOpen()` with a DAO query (`dao.getNextQuote()`).
+     */
+    fun getCuratedQuotes(): List<Quote> {
+        return listOf(
+            Quote(
+                id = "q_1",
+                text = "Feelings come and go like clouds in a windy sky. Conscious breathing is my anchor.",
+                author = "Thich Nhat Hanh"
+            ),
+            Quote(
+                id = "q_2",
+                text = "Within you, there is a stillness and a sanctuary to which you can retreat at any time and be yourself.",
+                author = "Hermann Hesse"
+            ),
+            Quote(
+                id = "q_3",
+                text = "You do not have to control your thoughts. You just have to stop letting them control you.",
+                author = "Dan Millman"
+            ),
+            Quote(
+                id = "q_4",
+                text = "Calm mind brings inner strength and self-confidence, so that is very important for good health.",
+                author = "Dalai Lama"
+            ),
+            Quote(
+                id = "q_5",
+                text = "Almost everything will work again if you unplug it for a few minutes, including you.",
+                author = "Anne Lamott"
+            ),
+            Quote(
+                id = "q_6",
+                text = "In the midst of movement and chaos, keep stillness inside of you.",
+                author = "Deepak Chopra"
+            ),
+            Quote(
+                id = "q_7",
+                text = "Quiet the mind, and the soul will speak.",
+                author = "Ma Jaya Sati Bhagavati"
+            ),
+            Quote(
+                id = "q_8",
+                text = "The present moment is filled with joy and happiness. If you are attentive, you will see it.",
+                author = "Thich Nhat Hanh"
+            ),
+            Quote(
+                id = "q_9",
+                text = "Do not let the behavior of others destroy your inner peace.",
+                author = "Dalai Lama"
+            ),
+            Quote(
+                id = "q_10",
+                text = "Nothing can bring you peace but yourself.",
+                author = "Ralph Waldo Emerson"
+            )
+        )
+    }
+
+    /**
+     * Advances and returns the next quote every time the user opens the app.
+     * Persists the rotation index in SharedPreferences so every launch displays a fresh quote,
+     * and provides a single integration point for the next-phase database query.
+     */
+    fun getNextQuoteOnAppOpen(context: Context): Quote {
+        val quotes = getCuratedQuotes()
+        if (quotes.isEmpty()) {
+            return Quote("q_default", "Breathe in calm, breathe out tension.", "STILL")
+        }
+        val prefs = context.getSharedPreferences(QUOTE_PREFS_NAME, Context.MODE_PRIVATE)
+        val lastIndex = prefs.getInt(KEY_LAST_QUOTE_INDEX, -1)
+        val nextIndex = (lastIndex + 1) % quotes.size
+        prefs.edit().putInt(KEY_LAST_QUOTE_INDEX, nextIndex).apply()
+        return quotes[nextIndex]
+    }
+}

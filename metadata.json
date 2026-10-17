@@ -1,0 +1,6 @@
+{
+  "name": "STILL",
+  "description": "Premium liquid-glass mental wellness and activity tracking application",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,991 @@
+package com.example.ui.screens
+
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.ChatBubbleOutline
+import androidx.compose.material.icons.filled.CheckCircleOutline
+import androidx.compose.material.icons.filled.DirectionsRun
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.FormatQuote
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Opacity
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.SelfImprovement
+import androidx.compose.material.icons.filled.Undo
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.shape.CircleShape
+import com.example.ui.glass.GlassRobot
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.ui.components.GlassButton
+import com.example.ui.components.GlassIconButton
+import com.example.ui.components.GlassWaterIndicator
+import com.example.ui.components.InteractiveWaveGraph
+import com.example.ui.components.StillTab
+import com.example.ui.glass.GlassCard
+import com.example.ui.glass.GlassTile
+import com.example.ui.glass.MoodSelectorCard
+import com.example.ui.theme.BlueDroplet
+import com.example.ui.theme.CyanBright
+import com.example.ui.theme.FrostedGlassBorder
+import com.example.ui.theme.GlassBorderActiveCyan
+import com.example.ui.theme.LiquidAzure
+import com.example.ui.theme.LiquidCobalt
+import com.example.ui.theme.OrangeFlame
+import com.example.ui.theme.PinkGlow
+import com.example.ui.theme.VioletBright
+import com.example.ui.viewmodel.WellnessViewModel
+
+@Composable
+fun DashboardScreen(
+    viewModel: WellnessViewModel,
+    modifier: Modifier = Modifier
+) {
+    val todayMetric by viewModel.todayMetric.collectAsState()
+    val selectedIndex by viewModel.selectedGraphIndex.collectAsState()
+    val currentQuote by viewModel.currentQuote.collectAsState()
+    val selectedMood by viewModel.selectedMood.collectAsState()
+    val appointments by viewModel.appointments.collectAsState()
+    val completedSessions by viewModel.completedSessions.collectAsState()
+
+    val isQuoteCardVisible by viewModel.isQuoteCardVisible.collectAsState()
+    val isMoodCardVisible by viewModel.isMoodCardVisible.collectAsState()
+    val isTelemetryCardVisible by viewModel.isTelemetryCardVisible.collectAsState()
+    val isTilesCardVisible by viewModel.isTilesCardVisible.collectAsState()
+    val isBreathworkCardVisible by viewModel.isBreathworkCardVisible.collectAsState()
+    val isHydrationCardVisible by viewModel.isHydrationCardVisible.collectAsState()
+    val isWalkingCardVisible by viewModel.isWalkingCardVisible.collectAsState()
+
+    var searchQuery by remember { mutableStateOf("") }
+    var showWaterDialog by remember { mutableStateOf(false) }
+    var showTaskDialog by remember { mutableStateOf(false) }
+    var showRobotDialog by remember { mutableStateOf(false) }
+    var showGamesDialog by remember { mutableStateOf(false) }
+    var isEditMode by remember { mutableStateOf(false) }
+
+    val activeBurn = todayMetric?.activeCalories ?: 486
+    val currentSteps = todayMetric?.steps ?: 7842
+    val stepGoal = todayMetric?.stepGoal ?: 10000
+    val waterMl = todayMetric?.waterMl ?: 1600
+    val waterGoalMl = todayMetric?.waterGoalMl ?: 2500
+    val exerciseMins = todayMetric?.exerciseMinutes ?: 42
+    val upcomingCount = appointments.count { it.status == "UPCOMING" }
+
+    val scrollState = rememberScrollState()
+
+    androidx.activity.compose.BackHandler(enabled = showRobotDialog || showGamesDialog) {
+        if (showGamesDialog) showGamesDialog = false
+        else if (showRobotDialog) showRobotDialog = false
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .testTag("dashboard_screen")
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(scrollState)
+                .statusBarsPadding()
+                .padding(horizontal = 20.dp, vertical = 8.dp)
+        ) {
+            // ================================================================
+            // 1. Minimal Liquid Glass Header
+            // ================================================================
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp, bottom = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "STILL",
+                        color = Color.White,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 3.sp,
+                        modifier = Modifier.testTag("app_brand_title")
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "Mindful Presence & Daily Balance",
+                        color = Color.White.copy(alpha = 0.72f),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Normal
+                    )
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val ambientTheme by viewModel.ambientTheme.collectAsState()
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(Color.White.copy(alpha = 0.14f))
+                            .border(1.dp, FrostedGlassBorder, RoundedCornerShape(20.dp))
+                            .clickable { viewModel.cycleAmbientTheme() }
+                            .padding(horizontal = 11.dp, vertical = 7.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            val dotColor = when (ambientTheme) {
+                                com.example.ui.glass.AmbientTheme.NIGHT_FERRIS_WHEEL -> Color(0xFF8FA89B)
+                                com.example.ui.glass.AmbientTheme.AURORA_SILK -> Color(0xFF7C98B3)
+                                com.example.ui.glass.AmbientTheme.DAYLIGHT_ETHEREAL -> Color(0xFFC87D65)
+                                com.example.ui.glass.AmbientTheme.COSMIC_DUSK -> VioletBright
+                                com.example.ui.glass.AmbientTheme.OCEAN_ABYSS -> Color(0xFF38BDF8)
+                                com.example.ui.glass.AmbientTheme.FOREST_RAIN -> Color(0xFF8BA698)
+                                com.example.ui.glass.AmbientTheme.BIOLUMINESCENT_WAKE -> Color(0xFF00B0FF)
+                                com.example.ui.glass.AmbientTheme.FERRIS_WHEEL -> Color(0xFFE4E4E7)
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .size(7.dp)
+                                    .clip(CircleShape)
+                                    .background(dotColor)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = ambientTheme.label,
+                                color = Color.White.copy(alpha = 0.92f),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+
+                    // Edit Mode Toggle Button
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(if (isEditMode) CyanBright.copy(alpha = 0.3f) else Color.White.copy(alpha = 0.14f))
+                            .border(1.dp, FrostedGlassBorder, CircleShape)
+                            .clickable { isEditMode = !isEditMode },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit Dashboard",
+                            tint = Color.White.copy(alpha = 0.90f),
+                            modifier = Modifier.size(17.dp)
+                        )
+                    }
+
+                    // Frosted Circular Menu / Profile Button
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.14f))
+                            .border(1.dp, FrostedGlassBorder, CircleShape)
+                            .clickable { viewModel.setTab(StillTab.PROFILE) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Menu,
+                            contentDescription = "Profile & Settings",
+                            tint = Color.White.copy(alpha = 0.90f),
+                            modifier = Modifier.size(17.dp)
+                        )
+                    }
+                }
+            }
+
+            // ================================================================
+            // 2. TOP CARD AFTER HEADING: Rotating Daily Reflection Quote Card
+            //    Changes automatically every time the user opens the app
+            // ================================================================
+            EditableCardWrapper(
+                isVisible = isQuoteCardVisible,
+                isEditMode = isEditMode,
+                onToggle = { viewModel.toggleQuoteCard() }
+            ) {
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    cornerRadius = 28.dp,
+                    borderBrush = GlassBorderActiveCyan,
+                    elevation = 12.dp,
+                    testTag = "card_quote_of_the_day"
+                ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 18.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(30.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(Color.White.copy(alpha = 0.15f))
+                                    .border(0.8.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(10.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.FormatQuote,
+                                    contentDescription = "Daily Reflection",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(17.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "DAILY REFLECTION",
+                                color = CyanBright,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 1.2.sp
+                            )
+                        }
+
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Next quote button
+                            GlassIconButton(
+                                onClick = { viewModel.nextQuote() },
+                                size = 32.dp,
+                                testTag = "btn_next_quote"
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = "Next Quote",
+                                    tint = Color.White.copy(alpha = 0.85f),
+                                    modifier = Modifier.size(15.dp)
+                                )
+                            }
+
+                            // Favorite quote toggle
+                            GlassIconButton(
+                                onClick = { viewModel.toggleFavoriteQuote() },
+                                size = 32.dp,
+                                isActive = currentQuote.isFavorite,
+                                testTag = "btn_favorite_quote"
+                            ) {
+                                Icon(
+                                    imageVector = if (currentQuote.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                    contentDescription = "Favorite Quote",
+                                    tint = if (currentQuote.isFavorite) PinkGlow else Color.White.copy(alpha = 0.85f),
+                                    modifier = Modifier.size(15.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    AnimatedContent(
+                        targetState = currentQuote,
+                        transitionSpec = { fadeIn() togetherWith fadeOut() },
+                        label = "QuoteTransition"
+                    ) { quote ->
+                        Column {
+                            Text(
+                                text = "“${quote.text}”",
+                                color = Color.White,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Medium,
+                                fontStyle = FontStyle.Italic,
+                                lineHeight = 22.sp
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "— ${quote.author}",
+                                    color = Color.White.copy(alpha = 0.78f),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.AutoAwesome,
+                                        contentDescription = null,
+                                        tint = CyanBright.copy(alpha = 0.75f),
+                                        modifier = Modifier.size(11.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = "Rotates on open",
+                                        color = Color.White.copy(alpha = 0.52f),
+                                        fontSize = 10.sp
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            } // End EditableCardWrapper for Quote
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // ================================================================
+            // 4. Minimal Mood Check-in Selector Card
+            // ================================================================
+            EditableCardWrapper(
+                isVisible = isMoodCardVisible,
+                isEditMode = isEditMode,
+                onToggle = { viewModel.toggleMoodCard() }
+            ) {
+                MoodSelectorCard(
+                    selectedMood = selectedMood,
+                    onMoodSelected = { viewModel.selectMood(it) },
+                    onMewMewClick = { showRobotDialog = true },
+                    onGamesClick = { showGamesDialog = true },
+                    onEmoClick = { viewModel.setEmoScreenOpen(true) }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // ================================================================
+            // 5. Refractive Liquid Glass Overview & Telemetry Wave Card
+            // ================================================================
+            EditableCardWrapper(
+                isVisible = isTelemetryCardVisible,
+                isEditMode = isEditMode,
+                onToggle = { viewModel.toggleTelemetryCard() }
+            ) {
+                GlassCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(225.dp),
+                    cornerRadius = 28.dp,
+                    elevation = 10.dp,
+                    testTag = "card_liquid_glass_overview"
+                ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(18.dp),
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.BarChart,
+                                contentDescription = null,
+                                tint = CyanBright,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Daily Energy & Balance",
+                                color = Color.White.copy(alpha = 0.92f),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+
+                        Text(
+                            text = "Mood: ${selectedMood.label}",
+                            color = CyanBright,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = "$activeBurn",
+                                color = Color.White,
+                                fontSize = 36.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = (-0.8).sp
+                            )
+                            Text(
+                                text = "Active kcal",
+                                color = Color.White.copy(alpha = 0.72f),
+                                fontSize = 12.sp
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "$exerciseMins min active",
+                                color = CyanBright,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = "${(currentSteps * 100 / stepGoal.coerceAtLeast(1))}% step goal",
+                                color = Color.White.copy(alpha = 0.55f),
+                                fontSize = 10.sp
+                            )
+                        }
+
+                        val points = viewModel.getChartPoints()
+                        InteractiveWaveGraph(
+                            points = points,
+                            selectedIndex = selectedIndex,
+                            onSelectIndex = { viewModel.selectGraphIndex(it) },
+                            unit = "kcal",
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(115.dp)
+                                .padding(start = 12.dp)
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "%,d steps • %.1f L water".format(currentSteps, waterMl / 1000f),
+                            color = Color.White.copy(alpha = 0.70f),
+                            fontSize = 11.sp
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(Color.White.copy(alpha = 0.16f))
+                                .border(0.9.dp, FrostedGlassBorder, CircleShape)
+                                .clickable { viewModel.setTab(StillTab.TRENDS) },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.TrendingUp,
+                                contentDescription = "View Journal Trends",
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
+            }
+            } // End EditableCardWrapper for Telemetry Wave Card
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // ================================================================
+            // 6. Split Minimal Liquid Glass Tiles: Therapy Sessions & Daily Goals
+            // ================================================================
+            EditableCardWrapper(
+                isVisible = isTilesCardVisible,
+                isEditMode = isEditMode,
+                onToggle = { viewModel.toggleTilesCard() }
+            ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                GlassTile(
+                    title = "Therapy",
+                    subtitle = "$upcomingCount upcoming",
+                    icon = Icons.Default.ChatBubbleOutline,
+                    iconTint = CyanBright,
+                    onClick = { viewModel.setTab(StillTab.THERAPISTS) },
+                    modifier = Modifier.weight(1f)
+                )
+
+                val goalsDone = listOf(
+                    currentSteps >= stepGoal,
+                    waterMl >= waterGoalMl,
+                    completedSessions.isNotEmpty()
+                ).count { it }
+
+                GlassTile(
+                    title = "Daily Goals",
+                    subtitle = "$goalsDone of 3 complete",
+                    icon = Icons.Default.CheckCircleOutline,
+                    iconTint = VioletBright,
+                    onClick = { showTaskDialog = true },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            } // End EditableCardWrapper for Tiles
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // ================================================================
+            // 7. Minimal Recent Activity & Wellness Sanctuary Feed (Searchable)
+            // ================================================================
+            Text(
+                text = "Daily Practices & Activity",
+                color = Color.White,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = (-0.2).sp
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            val q = searchQuery.trim().lowercase()
+
+            // Practice 1: Glass Bubble Breathing
+            if (q.isEmpty() || "box breathing practice meditate calm bubble".contains(q)) {
+            EditableCardWrapper(
+                isVisible = isBreathworkCardVisible,
+                isEditMode = isEditMode,
+                onToggle = { viewModel.toggleBreathworkCard() }
+            ) {
+                GlassCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    cornerRadius = 22.dp,
+                    elevation = 6.dp,
+                    onClick = { viewModel.setTab(StillTab.BREATHE) }
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(LiquidAzure.copy(alpha = 0.25f))
+                                    .border(0.9.dp, CyanBright.copy(alpha = 0.55f), RoundedCornerShape(12.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.SelfImprovement,
+                                    contentDescription = null,
+                                    tint = CyanBright,
+                                    modifier = Modifier.size(19.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = "Glass Bubble Breathwork",
+                                    color = Color.White,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = if (completedSessions.isNotEmpty()) {
+                                        "${completedSessions.size} session(s) completed • Tap to practice"
+                                    } else {
+                                        "5 min guided rhythm • Restores calm"
+                                    },
+                                    color = Color.White.copy(alpha = 0.68f),
+                                    fontSize = 11.sp
+                                )
+                            }
+                        }
+
+                        Text(
+                            text = "Breathe",
+                            color = CyanBright,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            }
+            } // End EditableCardWrapper for Breathwork
+
+            // Practice 2: Hydration Intake with Animated Glass Water Indicator
+            if (q.isEmpty() || "hydration water intake drink glass".contains(q)) {
+            EditableCardWrapper(
+                isVisible = isHydrationCardVisible,
+                isEditMode = isEditMode,
+                onToggle = { viewModel.toggleHydrationCard() }
+            ) {
+                GlassCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    cornerRadius = 22.dp,
+                    elevation = 6.dp,
+                    onClick = { showWaterDialog = true }
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(BlueDroplet.copy(alpha = 0.20f))
+                                    .border(0.9.dp, BlueDroplet.copy(alpha = 0.55f), RoundedCornerShape(12.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                GlassWaterIndicator(
+                                    currentMl = waterMl,
+                                    goalMl = waterGoalMl,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = "Hydration Intake",
+                                    color = Color.White,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = "${(waterMl / 1000f).formatOne()} / ${(waterGoalMl / 1000f).formatOne()} Litres (${(waterMl * 100 / waterGoalMl.coerceAtLeast(1))}%)",
+                                    color = Color.White.copy(alpha = 0.68f),
+                                    fontSize = 11.sp
+                                )
+                            }
+                        }
+
+                        Text(
+                            text = "+ Log",
+                            color = CyanBright,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            }
+            } // End EditableCardWrapper for Hydration
+
+            // Practice 3: Daily Walking Steps
+            if (q.isEmpty() || "walking steps activity calories run".contains(q)) {
+            EditableCardWrapper(
+                isVisible = isWalkingCardVisible,
+                isEditMode = isEditMode,
+                onToggle = { viewModel.toggleWalkingCard() }
+            ) {
+                GlassCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    cornerRadius = 22.dp,
+                    elevation = 6.dp,
+                    onClick = { viewModel.simulateStepIncrement(250) }
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(OrangeFlame.copy(alpha = 0.22f))
+                                    .border(0.9.dp, OrangeFlame.copy(alpha = 0.55f), RoundedCornerShape(12.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.DirectionsRun,
+                                    contentDescription = null,
+                                    tint = OrangeFlame,
+                                    modifier = Modifier.size(19.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = "Walking Activity",
+                                    color = Color.White,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = "%,d / %,d steps • %d kcal".format(currentSteps, stepGoal, activeBurn),
+                                    color = Color.White.copy(alpha = 0.68f),
+                                    fontSize = 11.sp
+                                )
+                            }
+                        }
+
+                        Text(
+                            text = "+250 steps",
+                            color = OrangeFlame,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            }
+            } // End EditableCardWrapper for Walking
+
+            Spacer(modifier = Modifier.height(92.dp))
+        }
+
+        // Robot Overlay
+        androidx.compose.animation.AnimatedVisibility(
+            visible = showRobotDialog,
+            enter = androidx.compose.animation.fadeIn(),
+            exit = androidx.compose.animation.fadeOut(),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFF040B1A).copy(alpha = 0.65f))
+                    .pointerInput(Unit) { detectTapGestures { } } // Block touches from passing through
+            ) {
+                GlassCard(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(24.dp),
+                    cornerRadius = 32.dp
+                ) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        GlassRobot()
+                        
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(16.dp)
+                                .clip(CircleShape)
+                                .clickable { showRobotDialog = false }
+                                .background(Color.White.copy(alpha = 0.1f))
+                                .padding(12.dp)
+                        ) {
+                            Text("Close", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+        }
+
+        // Games Overlay (full screen card same as mew mew robot)
+        androidx.compose.animation.AnimatedVisibility(
+            visible = showGamesDialog,
+            enter = androidx.compose.animation.fadeIn(),
+            exit = androidx.compose.animation.fadeOut(),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFF040B1A).copy(alpha = 0.70f))
+                    .pointerInput(Unit) { detectTapGestures { } } // Block touches from passing through
+            ) {
+                GlassCard(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    cornerRadius = 32.dp
+                ) {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        StillGamesScreen(modifier = Modifier.fillMaxSize())
+
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(16.dp)
+                                .clip(CircleShape)
+                                .clickable { showGamesDialog = false }
+                                .background(Color.White.copy(alpha = 0.15f))
+                                .padding(horizontal = 14.dp, vertical = 8.dp)
+                        ) {
+                            Text("Close", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+        }
+
+        // Quick Water Dialog
+        if (showWaterDialog) {
+            AlertDialog(
+                onDismissRequest = { showWaterDialog = false },
+                containerColor = Color(0xFF102048),
+                shape = RoundedCornerShape(28.dp),
+                title = {
+                    Text(
+                        text = "Log Water Intake",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    )
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text(
+                            text = "Current: ${(waterMl / 1000f).formatOne()} / ${(waterGoalMl / 1000f).formatOne()} Litres",
+                            color = CyanBright,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            GlassButton(
+                                text = "+150 ml",
+                                onClick = {
+                                    viewModel.addWater(150, "Small Cup")
+                                    showWaterDialog = false
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
+                            GlassButton(
+                                text = "+250 ml",
+                                onClick = {
+                                    viewModel.addWater(250, "Standard Glass")
+                                    showWaterDialog = false
+                                },
+                                modifier = Modifier.weight(1f),
+                                isActive = true
+                            )
+                            GlassButton(
+                                text = "+500 ml",
+                                onClick = {
+                                    viewModel.addWater(500, "Bottle")
+                                    showWaterDialog = false
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    viewModel.undoWater()
+                                    showWaterDialog = false
+                                }
+                                .padding(vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Undo,
+                                contentDescription = "Undo Entry",
+                                tint = Color.White.copy(alpha = 0.7f),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Undo last water entry (-250 ml)",
+                                color = Color.White.copy(alpha = 0.7f),
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showWaterDialog = false }) {
+                        Text("Close", color = CyanBright)
+                    }
+                }
+            )
+        }
+
+        // Daily Wellness Goals Dialog
+        if (showTaskDialog) {
+            AlertDialog(
+                onDismissRequest = { showTaskDialog = false },
+                containerColor = Color(0xFF102048),
+                shape = RoundedCornerShape(28.dp),
+                title = {
+                    Text(
+                        text = "Daily Wellness Sanctuary Goals",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    )
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        val bDone = if (completedSessions.isNotEmpty()) "✓" else "○"
+                        val wDone = if (waterMl >= waterGoalMl) "✓" else "○"
+                        val sDone = if (currentSteps >= stepGoal) "✓" else "○"
+                        Text(
+                            text = "$bDone Complete 5-minute Glass Bubble Breathing\n" +
+                                "$wDone Reach ${(waterGoalMl / 1000f).formatOne()}L Hydration (${(waterMl / 1000f).formatOne()}L logged)\n" +
+                                "$sDone Walk %,d steps (%,d logged)\n".format(stepGoal, currentSteps) +
+                                "○ Evening 10-minute Quiet The Mind meditation",
+                            color = Color.White.copy(alpha = 0.88f),
+                            fontSize = 13.sp,
+                            lineHeight = 20.sp
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showTaskDialog = false }) {
+                        Text("Done", color = CyanBright)
+                    }
+                }
+            )
+        }
+    }
+}
+
+private fun Float.formatOne(): String = String.format("%.1f", this)

@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "1044318322389",
+    "project_id": "still-wellness-cd4d4",
+    "storage_bucket": "still-wellness-cd4d4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1044318322389:android:d9a8053e65e599b76f2c5c",
+        "android_client_info": {
+          "package_name": "com.aistudio.stillwellness.vxqkr"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1044318322389-oo46lmnt3ikckhs75n134j3k7i9bchqg.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.aistudio.stillwellness.vxqkr",
+            "certificate_hash": "5338c8dc646f90d3d17870fb19760410a9eb0195"
+          }
+        },
+        {
+          "client_id": "1044318322389-8ojsn2r0delim29f701jjrocj502fd8b.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCnoSXDuOvVZuIEtZ97zjqqGMrB7aNYZjw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1044318322389-8ojsn2r0delim29f701jjrocj502fd8b.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
