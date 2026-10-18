@@ -60,6 +60,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.domain.model.BreathingMode
@@ -138,17 +139,22 @@ fun BreatheScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 4.dp),
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = if (practiceMainMode == PracticeMainMode.BREATHE) "B R E A T H E" else "H E A L",
+                    text = if (practiceMainMode == PracticeMainMode.BREATHE) "BREATHE" else "HEAL",
                     color = TextWhite,
-                    fontSize = 24.sp,
+                    fontSize = 22.sp,
                     fontWeight = FontWeight.Light,
-                    letterSpacing = 8.sp
+                    letterSpacing = 4.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
                 )
+
+                Spacer(modifier = Modifier.width(6.dp))
 
                 // Side-by-Side Practice Mode Switcher
                 Row(
@@ -185,14 +191,16 @@ fun BreatheScreen(
                                         pagerState.animateScrollToPage(mode.ordinal)
                                     }
                                 }
-                                .padding(horizontal = 14.dp, vertical = 6.dp),
+                                .padding(horizontal = 12.dp, vertical = 6.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = mode.label,
                                 color = if (isSel) TextWhite else Color.White.copy(alpha = 0.65f),
                                 fontSize = 12.sp,
-                                fontWeight = if (isSel) FontWeight.Bold else FontWeight.Medium
+                                fontWeight = if (isSel) FontWeight.Bold else FontWeight.Medium,
+                                maxLines = 1,
+                                softWrap = false
                             )
                         }
                     }
