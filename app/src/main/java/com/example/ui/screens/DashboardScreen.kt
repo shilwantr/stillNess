@@ -190,7 +190,6 @@ fun DashboardScreen(
                                     }
                                 }
                                 com.example.ui.glass.AmbientTheme.LOOPING_TRIOS -> Color(0xFF283447)
-                                com.example.ui.glass.AmbientTheme.RESONANCE_TUNNEL -> Color(0xFF38BDF8)
                             }
                             Box(
                                 modifier = Modifier
