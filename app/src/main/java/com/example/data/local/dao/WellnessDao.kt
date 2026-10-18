@@ -55,12 +55,18 @@ interface WellnessDao {
     @Query("UPDATE appointments SET status = :status WHERE id = :id")
     suspend fun updateAppointmentStatus(id: String, status: String)
 
+    @Query("DELETE FROM appointments WHERE id IN ('apt_1', 'apt_2')")
+    suspend fun deleteHardcodedAppointments()
+
     // Payment Records
     @Query("SELECT * FROM payment_records ORDER BY timestamp DESC")
     fun getAllPaymentsFlow(): Flow<List<PaymentRecordEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPayment(payment: PaymentRecordEntity)
+
+    @Query("DELETE FROM payment_records WHERE id = 'pay_001'")
+    suspend fun deleteHardcodedPayments()
 
     // Favorite Quotes
     @Query("SELECT * FROM favorite_quotes ORDER BY savedTimestamp DESC")

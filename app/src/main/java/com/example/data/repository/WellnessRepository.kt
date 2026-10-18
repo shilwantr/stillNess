@@ -12,10 +12,14 @@ import com.example.domain.model.AmbientSound
 import com.example.domain.model.MeditationTrack
 import com.example.domain.model.Quote
 import com.example.domain.model.Therapist
+import com.example.domain.model.UserRole
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -92,53 +96,15 @@ class WellnessRepository(private val dao: WellnessDao) {
                 dao.insertOrUpdateMetric(metric)
             }
 
-            // Seed initial sample appointments
-            dao.insertAppointment(
-                AppointmentEntity(
-                    id = "apt_1",
-                    therapistId = "th_1",
-                    therapistName = "Dr. Elena Vance, Psy.D.",
-                    therapistTitle = "Licensed Clinical Psychologist",
-                    clientName = "You",
-                    dateSlot = "Today",
-                    timeSlot = "3:30 PM",
-                    status = "UPCOMING",
-                    fee = 85.0,
-                    callEligible = true
-                )
-            )
-            dao.insertAppointment(
-                AppointmentEntity(
-                    id = "apt_2",
-                    therapistId = "th_2",
-                    therapistName = "Marcus Thorne, LMFT",
-                    therapistTitle = "Somatic & Mindfulness Therapist",
-                    clientName = "You",
-                    dateSlot = "Tomorrow",
-                    timeSlot = "11:00 AM",
-                    status = "UPCOMING",
-                    fee = 75.0,
-                    callEligible = false
-                )
-            )
-
             // Seed initial water entries for today
             dao.insertWaterEntry(WaterEntryEntity(date = today, amountMl = 350, vessel = "Morning Glass"))
             dao.insertWaterEntry(WaterEntryEntity(date = today, amountMl = 500, vessel = "Water Bottle"))
             dao.insertWaterEntry(WaterEntryEntity(date = today, amountMl = 750, vessel = "Tumbler"))
-
-            // Seed sample past payment
-            dao.insertPayment(
-                PaymentRecordEntity(
-                    id = "pay_001",
-                    title = "Therapy Consultation - Dr. Elena Vance",
-                    amount = 85.0,
-                    status = "CONFIRMED",
-                    paymentMethod = "Google Pay (ending 4821)",
-                    appointmentId = "apt_1"
-                )
-            )
         }
+
+        // Clean up any legacy hardcoded sample data
+        dao.deleteHardcodedAppointments()
+        dao.deleteHardcodedPayments()
     }
 
     suspend fun addWater(amountMl: Int, vessel: String = "Glass") {
@@ -221,58 +187,85 @@ class WellnessRepository(private val dao: WellnessDao) {
         }
     }
 
-    // Curated Therapists Directory
-    fun getCuratedTherapists(): List<Therapist> {
-        return listOf(
-            Therapist(
-                id = "th_1",
-                name = "Dr. Elena Vance, Psy.D.",
-                title = "Licensed Clinical Psychologist",
-                specialty = "Anxiety, High-Performance Burnout & Somatic Regulation",
-                credentials = "Ph.D. Columbia University • 12 yrs exp",
-                yearsExperience = 12,
-                languages = listOf("English", "Spanish"),
-                bio = "Specializing in evidence-based cognitive and nervous system stabilization for professionals experiencing stress, grief, and life transitions.",
-                rating = 4.98f,
-                reviewCount = 142,
-                hourlyRate = 85.0,
-                isVerified = true,
-                isOnline = true,
-                availableSlots = listOf("Today 3:30 PM", "Tomorrow 10:00 AM", "Friday 2:00 PM")
-            ),
-            Therapist(
-                id = "th_2",
-                name = "Marcus Thorne, LMFT",
-                title = "Mindfulness & Somatic Specialist",
-                specialty = "Nervous System Reset, Breathwork & Trauma-Informed Care",
-                credentials = "M.A. Stanford • Licensed MFT • 9 yrs exp",
-                yearsExperience = 9,
-                languages = listOf("English"),
-                bio = "Integrating somatic breath pacing with mindful inquiry to release trapped tension, restore parasympathetic balance, and improve sleep.",
-                rating = 4.95f,
-                reviewCount = 98,
-                hourlyRate = 75.0,
-                isVerified = true,
-                isOnline = true,
-                availableSlots = listOf("Today 5:00 PM", "Tomorrow 11:00 AM", "Monday 4:00 PM")
-            ),
-            Therapist(
-                id = "th_3",
-                name = "Dr. Maya Lin, Ph.D.",
-                title = "Mind-Body Health Consultant",
-                specialty = "Insomnia, Emotional Resilience & Cognitive Grounding",
-                credentials = "Ph.D. UC Berkeley • Board Certified • 15 yrs exp",
-                yearsExperience = 15,
-                languages = listOf("English", "Mandarin"),
-                bio = "Dedicated to holistic mental wellbeing through restorative relaxation techniques, bio-neurofeedback principles, and empathetic counseling.",
-                rating = 4.99f,
-                reviewCount = 210,
-                hourlyRate = 95.0,
-                isVerified = true,
-                isOnline = false,
-                availableSlots = listOf("Tomorrow 1:30 PM", "Thursday 3:00 PM")
-            )
-        )
+    fun getCuratedTherapists(): List<Therapist> = emptyList()
+
+    /**
+     * Live Therapist Directory - Streamed in real-time from Firebase Firestore DB.
+     */
+    fun getTherapistsFlow(): Flow<List<Therapist>> = callbackFlow {
+        val listener = firestore.collection("therapists")
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(emptyList())
+                    return@addSnapshotListener
+                }
+                if (snapshot != null) {
+                    val therapists = snapshot.documents.mapNotNull { doc ->
+                        try {
+                            doc.toObject(Therapist::class.java)?.copy(id = doc.id)
+                        } catch (e: Exception) {
+                            Therapist(
+                                id = doc.id,
+                                name = doc.getString("name") ?: "Therapist",
+                                title = doc.getString("title") ?: "Practitioner",
+                                specialty = doc.getString("specialty") ?: "Mental Health",
+                                credentials = doc.getString("credentials") ?: "Licensed Specialist",
+                                yearsExperience = doc.getLong("yearsExperience")?.toInt() ?: 5,
+                                languages = (doc.get("languages") as? List<*>)?.mapNotNull { it?.toString() } ?: listOf("English"),
+                                bio = doc.getString("bio") ?: "",
+                                rating = (doc.getDouble("rating") ?: 5.0).toFloat(),
+                                reviewCount = doc.getLong("reviewCount")?.toInt() ?: 0,
+                                hourlyRate = doc.getDouble("hourlyRate") ?: 75.0,
+                                isVerified = doc.getBoolean("isVerified") ?: true,
+                                isOnline = doc.getBoolean("isOnline") ?: true,
+                                availableSlots = (doc.get("availableSlots") as? List<*>)?.mapNotNull { it?.toString() } ?: listOf("Today 3:00 PM", "Tomorrow 10:00 AM"),
+                                email = doc.getString("email") ?: "",
+                                photoUrl = doc.getString("photoUrl") ?: ""
+                            )
+                        }
+                    }
+                    trySend(therapists)
+                }
+            }
+        awaitClose { listener.remove() }
+    }
+
+    suspend fun saveTherapistProfile(therapist: Therapist) {
+        suspendCancellableCoroutine<Unit> { cont ->
+            firestore.collection("therapists").document(therapist.id).set(therapist)
+                .addOnSuccessListener {
+                    if (cont.isActive) cont.resume(Unit)
+                }
+                .addOnFailureListener { e ->
+                    if (cont.isActive) cont.resumeWithException(e)
+                }
+        }
+    }
+
+    suspend fun saveUserRole(uid: String, role: UserRole) {
+        suspendCancellableCoroutine<Unit> { cont ->
+            firestore.collection("users").document(uid).set(mapOf("role" to role.name))
+                .addOnSuccessListener {
+                    if (cont.isActive) cont.resume(Unit)
+                }
+                .addOnFailureListener { e ->
+                    if (cont.isActive) cont.resumeWithException(e)
+                }
+        }
+    }
+
+    suspend fun getUserRole(uid: String): UserRole {
+        return suspendCancellableCoroutine { cont ->
+            firestore.collection("users").document(uid).get()
+                .addOnSuccessListener { doc ->
+                    val r = doc.getString("role")
+                    val role = if (r == "THERAPIST") UserRole.THERAPIST else UserRole.CLIENT
+                    if (cont.isActive) cont.resume(role)
+                }
+                .addOnFailureListener {
+                    if (cont.isActive) cont.resume(UserRole.CLIENT)
+                }
+        }
     }
 
     private val firestore by lazy { FirebaseFirestore.getInstance() }

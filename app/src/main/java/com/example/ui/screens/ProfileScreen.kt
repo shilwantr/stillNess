@@ -20,18 +20,18 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -47,20 +47,24 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import com.example.domain.model.UserRole
 import com.example.ui.components.GlassButton
 import com.example.ui.glass.GlassCard
 import com.example.ui.theme.CyanBright
 import com.example.ui.theme.CyanGlow
-import com.example.ui.theme.GlassBorderActiveCyan
-import com.example.ui.theme.GlassBorderGradient
-import com.example.ui.theme.OrangeFlame
-import com.example.ui.theme.PinkGlow
 import com.example.ui.theme.DustyRose
+import com.example.ui.theme.FrostedGlassBorder
+import com.example.ui.theme.GlassBorderActiveCyan
+import com.example.ui.theme.PinkGlow
 import com.example.ui.theme.TextMuted
 import com.example.ui.theme.TextSubtle
 import com.example.ui.theme.TextWhite
@@ -74,12 +78,22 @@ fun ProfileScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val currentUser by viewModel.currentUser.collectAsState()
+    val userRole by viewModel.userRole.collectAsState()
+    val isAuthLoading by viewModel.isAuthLoading.collectAsState()
+    val authError by viewModel.authError.collectAsState()
+    val therapistSaveSuccess by viewModel.therapistSaveSuccess.collectAsState()
     val payments by viewModel.payments.collectAsState()
     val todayMetric by viewModel.todayMetric.collectAsState()
 
     var hydrationRemindersEnabled by remember { mutableStateOf(true) }
     var mindfulnessAlertsEnabled by remember { mutableStateOf(true) }
-    var isSubscribed by remember { mutableStateOf(true) }
+
+    // Minimal Therapist profile form fields
+    var therapistTitle by remember { mutableStateOf("") }
+    var therapistSpecialty by remember { mutableStateOf("") }
+    var therapistHourlyRate by remember { mutableStateOf("") }
+    var therapistBio by remember { mutableStateOf("") }
 
     val scrollState = rememberScrollState()
 
@@ -104,120 +118,398 @@ fun ProfileScreen(
                 modifier = Modifier.padding(vertical = 8.dp)
             )
 
-            // User Profile Header Card
-            GlassCard(
-                modifier = Modifier.fillMaxWidth(),
-                cornerRadius = 24.dp,
-                testTag = "card_user_profile"
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(18.dp),
-                    verticalAlignment = Alignment.CenterVertically
+            // Authentication & Account Section
+            val user = currentUser
+            if (user == null) {
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    cornerRadius = 24.dp,
+                    borderBrush = GlassBorderActiveCyan,
+                    testTag = "card_auth_signin"
                 ) {
-                    Box(
+                    Column(
                         modifier = Modifier
-                            .size(62.dp)
-                            .clip(CircleShape)
-                            .background(
-                                Brush.radialGradient(
-                                    colors = listOf(CyanGlow.copy(alpha = 0.5f), VioletGlow.copy(alpha = 0.3f))
-                                )
-                            )
-                            .border(1.5.dp, GlassBorderActiveCyan, CircleShape),
-                        contentAlignment = Alignment.Center
+                            .fillMaxWidth()
+                            .padding(20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = "User Avatar",
-                            tint = TextWhite,
-                            modifier = Modifier.size(34.dp)
-                        )
-                    }
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(CircleShape)
+                                .background(CyanGlow.copy(alpha = 0.2f))
+                                .border(1.dp, GlassBorderActiveCyan, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AccountCircle,
+                                contentDescription = "Sign in",
+                                tint = CyanBright,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
 
-                    Spacer(modifier = Modifier.width(16.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
 
-                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Alex Mercer",
+                            text = "Sign In with Google",
                             color = TextWhite,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.SemiBold
                         )
+                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "STILL Member • Daily Pacer",
-                            color = CyanBright,
-                            fontSize = 12.sp
+                            text = "Sign in to register as a Client or Therapist.",
+                            color = TextMuted,
+                            fontSize = 12.sp,
+                            textAlign = TextAlign.Center
                         )
-                        Text(
-                            text = "Connected with Step Sensor & Audio Engine",
-                            color = TextSubtle,
-                            fontSize = 10.sp
-                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        if (isAuthLoading) {
+                            CircularProgressIndicator(
+                                color = CyanBright,
+                                modifier = Modifier.size(26.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            GlassButton(
+                                text = "Continue with Google",
+                                onClick = { viewModel.signInWithGoogle(context) },
+                                isActive = true,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+
+                        if (!authError.isNullOrBlank()) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = authError ?: "",
+                                color = PinkGlow,
+                                fontSize = 11.sp,
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Premium Membership & Subscriptions
-            GlassCard(
-                modifier = Modifier.fillMaxWidth(),
-                cornerRadius = 22.dp,
-                borderBrush = GlassBorderActiveCyan,
-                testTag = "card_subscription_tier"
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(18.dp)
+            } else {
+                // Logged-in User Profile Header
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    cornerRadius = 24.dp,
+                    testTag = "card_user_profile"
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(18.dp)
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = "Premium",
-                                tint = CyanBright,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val photo = user.photoUrl?.toString()
+                            if (!photo.isNullOrBlank()) {
+                                AsyncImage(
+                                    model = photo,
+                                    contentDescription = user.displayName ?: "User",
+                                    modifier = Modifier
+                                        .size(54.dp)
+                                        .clip(CircleShape)
+                                        .border(1.5.dp, GlassBorderActiveCyan, CircleShape),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .size(54.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            Brush.radialGradient(
+                                                colors = listOf(CyanGlow.copy(alpha = 0.5f), VioletGlow.copy(alpha = 0.3f))
+                                            )
+                                        )
+                                        .border(1.5.dp, GlassBorderActiveCyan, CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Person,
+                                        contentDescription = "User Avatar",
+                                        tint = TextWhite,
+                                        modifier = Modifier.size(28.dp)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.width(14.dp))
+
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = user.displayName ?: "User",
+                                    color = TextWhite,
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = user.email ?: "",
+                                    color = TextMuted,
+                                    fontSize = 12.sp
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = if (userRole == UserRole.THERAPIST) "Therapist Account" else "Client Account",
+                                    color = CyanBright,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+
                             Text(
-                                text = "STILL Premium Sanctuary",
+                                text = "Sign Out",
+                                color = PinkGlow,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { viewModel.signOut() }
+                                    .padding(horizontal = 8.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Registration Type Selector
+                Text(
+                    text = "Registration Type",
+                    color = TextWhite,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    val isClient = userRole == UserRole.CLIENT
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(if (isClient) CyanGlow.copy(alpha = 0.25f) else Color.White.copy(alpha = 0.05f))
+                            .border(1.dp, if (isClient) GlassBorderActiveCyan else FrostedGlassBorder, RoundedCornerShape(16.dp))
+                            .clickable { viewModel.setUserRole(UserRole.CLIENT) }
+                            .padding(vertical = 12.dp, horizontal = 14.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "Client",
+                                color = if (isClient) TextWhite else TextMuted,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Seeking Support",
+                                color = if (isClient) CyanBright else TextSubtle,
+                                fontSize = 10.sp
+                            )
+                        }
+                    }
+
+                    val isTherapist = userRole == UserRole.THERAPIST
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(if (isTherapist) VioletGlow.copy(alpha = 0.25f) else Color.White.copy(alpha = 0.05f))
+                            .border(1.dp, if (isTherapist) SolidColor(VioletBright) else FrostedGlassBorder, RoundedCornerShape(16.dp))
+                            .clickable { viewModel.setUserRole(UserRole.THERAPIST) }
+                            .padding(vertical = 12.dp, horizontal = 14.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "Therapist",
+                                color = if (isTherapist) TextWhite else TextMuted,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Practitioner",
+                                color = if (isTherapist) VioletBright else TextSubtle,
+                                fontSize = 10.sp
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                if (userRole == UserRole.CLIENT) {
+                    GlassCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        cornerRadius = 18.dp
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                        ) {
+                            Text(
+                                text = "Client Registration Active",
+                                color = TextWhite,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "You are registered as a Client. You can discover specialists and book sessions in the Therapy tab.",
+                                color = TextMuted,
+                                fontSize = 12.sp,
+                                lineHeight = 16.sp
+                            )
+                        }
+                    }
+                } else {
+                    // Minimal Therapist Registration Form
+                    GlassCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        cornerRadius = 20.dp
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Text(
+                                text = "Therapist Registration",
                                 color = TextWhite,
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Bold
                             )
-                        }
+                            Text(
+                                text = "Complete your profile to appear in the Therapy tab directory.",
+                                color = TextMuted,
+                                fontSize = 11.sp
+                            )
 
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(CyanGlow.copy(alpha = 0.3f))
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                        ) {
-                            Text("Active", color = CyanBright, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            OutlinedTextField(
+                                value = therapistTitle,
+                                onValueChange = { therapistTitle = it },
+                                label = { Text("Title (e.g. Clinical Psychologist)", color = TextMuted, fontSize = 11.sp) },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                singleLine = true,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedTextColor = TextWhite,
+                                    unfocusedTextColor = TextWhite,
+                                    focusedBorderColor = CyanBright,
+                                    unfocusedBorderColor = FrostedGlassBorder.value,
+                                    focusedContainerColor = Color.White.copy(alpha = 0.05f),
+                                    unfocusedContainerColor = Color.White.copy(alpha = 0.02f)
+                                )
+                            )
+
+                            OutlinedTextField(
+                                value = therapistSpecialty,
+                                onValueChange = { therapistSpecialty = it },
+                                label = { Text("Specialty (e.g. Anxiety, Stress)", color = TextMuted, fontSize = 11.sp) },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                singleLine = true,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedTextColor = TextWhite,
+                                    unfocusedTextColor = TextWhite,
+                                    focusedBorderColor = CyanBright,
+                                    unfocusedBorderColor = FrostedGlassBorder.value,
+                                    focusedContainerColor = Color.White.copy(alpha = 0.05f),
+                                    unfocusedContainerColor = Color.White.copy(alpha = 0.02f)
+                                )
+                            )
+
+                            OutlinedTextField(
+                                value = therapistHourlyRate,
+                                onValueChange = { therapistHourlyRate = it },
+                                label = { Text("Hourly Rate ($ / session)", color = TextMuted, fontSize = 11.sp) },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedTextColor = TextWhite,
+                                    unfocusedTextColor = TextWhite,
+                                    focusedBorderColor = CyanBright,
+                                    unfocusedBorderColor = FrostedGlassBorder.value,
+                                    focusedContainerColor = Color.White.copy(alpha = 0.05f),
+                                    unfocusedContainerColor = Color.White.copy(alpha = 0.02f)
+                                )
+                            )
+
+                            OutlinedTextField(
+                                value = therapistBio,
+                                onValueChange = { therapistBio = it },
+                                label = { Text("Bio", color = TextMuted, fontSize = 11.sp) },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                maxLines = 3,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedTextColor = TextWhite,
+                                    unfocusedTextColor = TextWhite,
+                                    focusedBorderColor = CyanBright,
+                                    unfocusedBorderColor = FrostedGlassBorder.value,
+                                    focusedContainerColor = Color.White.copy(alpha = 0.05f),
+                                    unfocusedContainerColor = Color.White.copy(alpha = 0.02f)
+                                )
+                            )
+
+                            if (isAuthLoading) {
+                                CircularProgressIndicator(
+                                    color = CyanBright,
+                                    modifier = Modifier
+                                        .size(24.dp)
+                                        .align(Alignment.CenterHorizontally),
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                GlassButton(
+                                    text = "Save Therapist Profile",
+                                    onClick = {
+                                        viewModel.registerTherapistProfile(
+                                            title = therapistTitle,
+                                            specialty = therapistSpecialty,
+                                            hourlyRate = therapistHourlyRate.toDoubleOrNull() ?: 75.0,
+                                            bio = therapistBio
+                                        )
+                                    },
+                                    isActive = true,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+
+                            if (!therapistSaveSuccess.isNullOrBlank()) {
+                                Text(
+                                    text = therapistSaveSuccess ?: "",
+                                    color = Color(0xFF10B981),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+
+                            if (!authError.isNullOrBlank()) {
+                                Text(
+                                    text = authError ?: "",
+                                    color = PinkGlow,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Unlimited guided meditations, high-frequency soundscapes, encrypted therapist voice consultations, and predictive energy analytics.",
-                        color = TextMuted,
-                        fontSize = 12.sp,
-                        lineHeight = 17.sp
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = "$9.99 / month • Renews Oct 28, 2026",
-                        color = TextSubtle,
-                        fontSize = 11.sp
-                    )
                 }
             }
 

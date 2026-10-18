@@ -23,6 +23,16 @@ import com.example.ui.glass.MoodState
 import com.example.util.AudioSoundManager
 import com.example.util.NotificationHelper
 import com.example.util.StepSensorManager
+import android.content.Context
+import androidx.credentials.CredentialManager
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.CustomCredential
+import androidx.credentials.exceptions.GetCredentialException
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,6 +41,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import kotlin.math.PI
 import kotlin.math.ceil
 import kotlin.math.cos
@@ -80,6 +93,24 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
     // Navigation Tab
     private val _currentTab = MutableStateFlow(StillTab.TODAY)
     val currentTab: StateFlow<StillTab> = _currentTab.asStateFlow()
+
+    // Auth & User State
+    private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
+    private val _currentUser = MutableStateFlow<FirebaseUser?>(null)
+    val currentUser: StateFlow<FirebaseUser?> = _currentUser.asStateFlow()
+
+    private val _isAuthLoading = MutableStateFlow(false)
+    val isAuthLoading: StateFlow<Boolean> = _isAuthLoading.asStateFlow()
+
+    private val _authError = MutableStateFlow<String?>(null)
+    val authError: StateFlow<String?> = _authError.asStateFlow()
+
+    private val _therapistSaveSuccess = MutableStateFlow<String?>(null)
+    val therapistSaveSuccess: StateFlow<String?> = _therapistSaveSuccess.asStateFlow()
+
+    // Dynamic Live Therapists list streamed from Firestore
+    val therapists: StateFlow<List<Therapist>> = repository.getTherapistsFlow()
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     // Role
     private val _userRole = MutableStateFlow(UserRole.CLIENT)
@@ -246,6 +277,23 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
     private var hasRotatedInitialLaunch = false
 
     init {
+        // Observe Firebase Authentication State
+        try {
+            _currentUser.value = auth.currentUser
+            auth.addAuthStateListener { fa ->
+                val user = fa.currentUser
+                _currentUser.value = user
+                if (user != null) {
+                    viewModelScope.launch {
+                        try {
+                            val role = repository.getUserRole(user.uid)
+                            _userRole.value = role
+                        } catch (_: Exception) {}
+                    }
+                }
+            }
+        } catch (_: Exception) {}
+
         // Rotate quote on initial ViewModel creation
         rotateQuoteOnAppOpen()
 
@@ -314,8 +362,128 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
         audioSoundManager.triggerSubtleHaptic()
     }
 
+    companion object {
+        private const val WEB_CLIENT_ID = "1044318322389-8ojsn2r0delim29f701jjrocj502fd8b.apps.googleusercontent.com"
+    }
+
+    private suspend fun <T> com.google.android.gms.tasks.Task<T>.awaitTask(): T =
+        suspendCancellableCoroutine { cont ->
+            addOnSuccessListener { if (cont.isActive) cont.resume(it) }
+            addOnFailureListener { if (cont.isActive) cont.resumeWithException(it) }
+            addOnCanceledListener { cont.cancel() }
+        }
+
+    fun signInWithGoogle(activityContext: Context) {
+        viewModelScope.launch {
+            _isAuthLoading.value = true
+            _authError.value = null
+            try {
+                val credentialManager = CredentialManager.create(activityContext)
+                val googleIdOption = GetGoogleIdOption.Builder()
+                    .setFilterByAuthorizedAccounts(false)
+                    .setServerClientId(WEB_CLIENT_ID)
+                    .setAutoSelectEnabled(false)
+                    .build()
+
+                val request = GetCredentialRequest.Builder()
+                    .addCredentialOption(googleIdOption)
+                    .build()
+
+                val result = credentialManager.getCredential(
+                    request = request,
+                    context = activityContext
+                )
+                val credential = result.credential
+                if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+                    val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                    val authCredential = GoogleAuthProvider.getCredential(googleIdTokenCredential.idToken, null)
+                    auth.signInWithCredential(authCredential).awaitTask()
+                    _currentUser.value = auth.currentUser
+                    auth.currentUser?.let { user ->
+                        val role = repository.getUserRole(user.uid)
+                        _userRole.value = role
+                    }
+                } else {
+                    _authError.value = "Unrecognized credential type"
+                }
+            } catch (e: GetCredentialException) {
+                _authError.value = "Google Sign-In was cancelled."
+            } catch (e: Exception) {
+                _authError.value = e.localizedMessage ?: "Authentication failed"
+            } finally {
+                _isAuthLoading.value = false
+            }
+        }
+    }
+
+    fun signOut() {
+        auth.signOut()
+        _currentUser.value = null
+        _userRole.value = UserRole.CLIENT
+        _authError.value = null
+        _therapistSaveSuccess.value = null
+    }
+
     fun setUserRole(role: UserRole) {
         _userRole.value = role
+        val user = _currentUser.value ?: return
+        viewModelScope.launch {
+            try {
+                repository.saveUserRole(user.uid, role)
+            } catch (_: Exception) {}
+        }
+    }
+
+    fun registerTherapistProfile(
+        title: String,
+        specialty: String,
+        hourlyRate: Double,
+        bio: String
+    ) {
+        val user = _currentUser.value
+        if (user == null) {
+            _authError.value = "Please sign in before registering as a therapist."
+            return
+        }
+        viewModelScope.launch {
+            _isAuthLoading.value = true
+            _authError.value = null
+            _therapistSaveSuccess.value = null
+            try {
+                val therapist = Therapist(
+                    id = user.uid,
+                    name = user.displayName ?: "Therapist",
+                    title = title.ifBlank { "Licensed Therapist" },
+                    specialty = specialty.ifBlank { "Mindfulness & Wellbeing" },
+                    credentials = "Verified Practitioner",
+                    yearsExperience = 5,
+                    languages = listOf("English"),
+                    bio = bio.ifBlank { "Compassionate mental wellbeing support and guidance." },
+                    rating = 5.0f,
+                    reviewCount = 0,
+                    hourlyRate = if (hourlyRate > 0) hourlyRate else 75.0,
+                    isVerified = true,
+                    isOnline = true,
+                    availableSlots = listOf("Today 3:00 PM", "Tomorrow 10:00 AM", "Thursday 2:00 PM"),
+                    email = user.email ?: "",
+                    photoUrl = user.photoUrl?.toString() ?: ""
+                )
+                repository.saveTherapistProfile(therapist)
+                repository.saveUserRole(user.uid, UserRole.THERAPIST)
+                _userRole.value = UserRole.THERAPIST
+                _therapistSaveSuccess.value = "Registered successfully! You are now listed in the Therapy section."
+                audioSoundManager.triggerSubtleHaptic()
+            } catch (e: Exception) {
+                _authError.value = e.localizedMessage ?: "Failed to save therapist profile"
+            } finally {
+                _isAuthLoading.value = false
+            }
+        }
+    }
+
+    fun clearAuthMessages() {
+        _authError.value = null
+        _therapistSaveSuccess.value = null
     }
 
     fun setMetricType(type: MetricViewType) {

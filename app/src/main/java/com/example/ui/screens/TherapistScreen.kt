@@ -62,6 +62,8 @@ import com.example.ui.theme.TextSubtle
 import com.example.ui.theme.TextWhite
 import com.example.ui.theme.VioletBright
 import com.example.ui.theme.VioletGlow
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import com.example.ui.viewmodel.WellnessViewModel
 
 @Composable
@@ -72,7 +74,7 @@ fun TherapistScreen(
 ) {
     val userRole by viewModel.userRole.collectAsState()
     val appointments by viewModel.appointments.collectAsState()
-    val therapists = remember { viewModel.repository.getCuratedTherapists() }
+    val therapists by viewModel.therapists.collectAsState()
 
     var selectedTherapistForBooking by remember { mutableStateOf<Therapist?>(null) }
     var selectedSlot by remember { mutableStateOf("") }
@@ -96,7 +98,6 @@ fun TherapistScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
@@ -108,29 +109,9 @@ fun TherapistScreen(
                         letterSpacing = 8.sp
                     )
                     Text(
-                        text = if (userRole == UserRole.CLIENT) "Verified Licensed Practitioners" else "Therapist Provider Portal",
+                        text = "Verified Licensed Practitioners & Consultations",
                         color = TextMuted,
                         fontSize = 12.sp
-                    )
-                }
-
-                // Role Switcher Pill
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(Color.White.copy(alpha = 0.10f))
-                        .border(0.8.dp, FrostedGlassBorder, RoundedCornerShape(16.dp))
-                        .clickable {
-                            val newRole = if (userRole == UserRole.CLIENT) UserRole.THERAPIST else UserRole.CLIENT
-                            viewModel.setUserRole(newRole)
-                        }
-                        .padding(horizontal = 10.dp, vertical = 6.dp)
-                ) {
-                    Text(
-                        text = if (userRole == UserRole.CLIENT) "Client Mode" else "Therapist Mode",
-                        color = CyanBright,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold
                     )
                 }
             }
@@ -260,40 +241,67 @@ fun TherapistScreen(
             )
             Spacer(modifier = Modifier.height(10.dp))
 
-            therapists.forEach { therapist ->
+            if (therapists.isEmpty()) {
                 GlassCard(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 6.dp),
-                    cornerRadius = 22.dp,
-                    testTag = "card_therapist_${therapist.id}"
+                        .padding(vertical = 4.dp),
+                    cornerRadius = 18.dp
                 ) {
-                    Column(
+                    Text(
+                        text = "No practitioners registered yet. Therapists can register under the Profile tab.",
+                        color = TextMuted,
+                        fontSize = 13.sp,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+            } else {
+                therapists.forEach { therapist ->
+                    GlassCard(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp)
+                            .padding(vertical = 6.dp),
+                        cornerRadius = 22.dp,
+                        testTag = "card_therapist_${therapist.id}"
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.Top
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
                         ) {
-                            Row(modifier = Modifier.weight(1f)) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(46.dp)
-                                        .clip(CircleShape)
-                                        .background(VioletGlow.copy(alpha = 0.35f))
-                                        .border(1.dp, VioletBright, CircleShape),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Person,
-                                        contentDescription = therapist.name,
-                                        tint = TextWhite,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.Top
+                            ) {
+                                Row(modifier = Modifier.weight(1f)) {
+                                    if (therapist.photoUrl.isNotBlank()) {
+                                        AsyncImage(
+                                            model = therapist.photoUrl,
+                                            contentDescription = therapist.name,
+                                            modifier = Modifier
+                                                .size(46.dp)
+                                                .clip(CircleShape)
+                                                .border(1.dp, VioletBright, CircleShape),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    } else {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(46.dp)
+                                                .clip(CircleShape)
+                                                .background(VioletGlow.copy(alpha = 0.35f))
+                                                .border(1.dp, VioletBright, CircleShape),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Person,
+                                                contentDescription = therapist.name,
+                                                tint = TextWhite,
+                                                modifier = Modifier.size(24.dp)
+                                            )
+                                        }
+                                    }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -384,6 +392,7 @@ fun TherapistScreen(
                             )
                         }
                     }
+                }
                 }
             }
 

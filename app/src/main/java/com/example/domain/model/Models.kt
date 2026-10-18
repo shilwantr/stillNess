@@ -55,20 +55,22 @@ data class Quote(
 )
 
 data class Therapist(
-    val id: String,
-    val name: String,
-    val title: String,
-    val specialty: String,
-    val credentials: String,
-    val yearsExperience: Int,
-    val languages: List<String>,
-    val bio: String,
-    val rating: Float,
-    val reviewCount: Int,
-    val hourlyRate: Double,
+    val id: String = "",
+    val name: String = "",
+    val title: String = "",
+    val specialty: String = "",
+    val credentials: String = "",
+    val yearsExperience: Int = 0,
+    val languages: List<String> = emptyList(),
+    val bio: String = "",
+    val rating: Float = 5.0f,
+    val reviewCount: Int = 0,
+    val hourlyRate: Double = 0.0,
     val isVerified: Boolean = true,
     val isOnline: Boolean = true,
-    val availableSlots: List<String>
+    val availableSlots: List<String> = listOf("Today 3:00 PM", "Tomorrow 10:00 AM", "Thursday 2:00 PM"),
+    val email: String = "",
+    val photoUrl: String = ""
 )
 
 data class MeditationTrack(
