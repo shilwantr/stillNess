@@ -34,7 +34,6 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.FormatQuote
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Opacity
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SelfImprovement
@@ -180,14 +179,17 @@ fun DashboardScreen(
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             val dotColor = when (ambientTheme) {
-                                com.example.ui.glass.AmbientTheme.NIGHT_FERRIS_WHEEL -> Color(0xFF8FA89B)
                                 com.example.ui.glass.AmbientTheme.AURORA_SILK -> Color(0xFF7C98B3)
-                                com.example.ui.glass.AmbientTheme.DAYLIGHT_ETHEREAL -> Color(0xFFC87D65)
-                                com.example.ui.glass.AmbientTheme.COSMIC_DUSK -> VioletBright
-                                com.example.ui.glass.AmbientTheme.OCEAN_ABYSS -> Color(0xFF38BDF8)
-                                com.example.ui.glass.AmbientTheme.FOREST_RAIN -> Color(0xFF8BA698)
-                                com.example.ui.glass.AmbientTheme.BIOLUMINESCENT_WAKE -> Color(0xFF00B0FF)
                                 com.example.ui.glass.AmbientTheme.FERRIS_WHEEL -> Color(0xFFE4E4E7)
+                                com.example.ui.glass.AmbientTheme.TIME_DYNAMIC -> {
+                                    val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+                                    when (hour) {
+                                        in 5..11 -> Color(0xFF90C978)
+                                        in 12..17 -> Color(0xFFD49A63)
+                                        else -> Color(0xFF7874C4)
+                                    }
+                                }
+                                com.example.ui.glass.AmbientTheme.LOOPING_TRIOS -> Color(0xFF283447)
                             }
                             Box(
                                 modifier = Modifier
@@ -218,24 +220,6 @@ fun DashboardScreen(
                         Icon(
                             imageVector = Icons.Default.Edit,
                             contentDescription = "Edit Dashboard",
-                            tint = Color.White.copy(alpha = 0.90f),
-                            modifier = Modifier.size(17.dp)
-                        )
-                    }
-
-                    // Frosted Circular Menu / Profile Button
-                    Box(
-                        modifier = Modifier
-                            .size(38.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.14f))
-                            .border(1.dp, FrostedGlassBorder, CircleShape)
-                            .clickable { viewModel.setTab(StillTab.PROFILE) },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Menu,
-                            contentDescription = "Profile & Settings",
                             tint = Color.White.copy(alpha = 0.90f),
                             modifier = Modifier.size(17.dp)
                         )
@@ -730,8 +714,7 @@ fun DashboardScreen(
                         .fillMaxWidth()
                         .padding(vertical = 4.dp),
                     cornerRadius = 22.dp,
-                    elevation = 6.dp,
-                    onClick = { viewModel.simulateStepIncrement(250) }
+                    elevation = 6.dp
                 ) {
                     Row(
                         modifier = Modifier
@@ -773,7 +756,7 @@ fun DashboardScreen(
                         }
 
                         Text(
-                            text = "+250 steps",
+                            text = "Auto Track",
                             color = OrangeFlame,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold

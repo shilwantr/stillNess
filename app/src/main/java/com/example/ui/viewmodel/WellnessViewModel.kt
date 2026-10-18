@@ -46,8 +46,7 @@ enum class BreathingPhase(val label: String, val cueText: String) {
 enum class MetricViewType(val label: String, val unit: String) {
     CALORIES("Active Energy", "kcal"),
     STEPS("Steps", "steps"),
-    WATER("Water", "ml"),
-    EXERCISE("Exercise", "min")
+    WATER("Water", "ml")
 }
 
 enum class TimeframeView(val label: String) {
@@ -90,8 +89,8 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
     private val _selectedMood = MutableStateFlow(MoodState.CALM)
     val selectedMood: StateFlow<MoodState> = _selectedMood.asStateFlow()
 
-    // Ambient Background Theme (keeps NIGHT_FERRIS_WHEEL as initial value for test compatibility)
-    private val _ambientTheme = MutableStateFlow(com.example.ui.glass.AmbientTheme.NIGHT_FERRIS_WHEEL)
+    // Ambient Background Theme (NT / AURORA_SILK as initial theme)
+    private val _ambientTheme = MutableStateFlow(com.example.ui.glass.AmbientTheme.AURORA_SILK)
     val ambientTheme: StateFlow<com.example.ui.glass.AmbientTheme> = _ambientTheme.asStateFlow()
 
     fun setAmbientTheme(theme: com.example.ui.glass.AmbientTheme) {
@@ -133,10 +132,10 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
     private val _isMoodCardVisible = MutableStateFlow(true)
     val isMoodCardVisible: StateFlow<Boolean> = _isMoodCardVisible.asStateFlow()
 
-    private val _isTelemetryCardVisible = MutableStateFlow(true)
+    private val _isTelemetryCardVisible = MutableStateFlow(false)
     val isTelemetryCardVisible: StateFlow<Boolean> = _isTelemetryCardVisible.asStateFlow()
 
-    private val _isTilesCardVisible = MutableStateFlow(true)
+    private val _isTilesCardVisible = MutableStateFlow(false)
     val isTilesCardVisible: StateFlow<Boolean> = _isTilesCardVisible.asStateFlow()
 
     private val _isBreathworkCardVisible = MutableStateFlow(true)
@@ -688,7 +687,6 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
             MetricViewType.CALORIES -> listOf(410f, 440f, 486f, 510f, 540f, 710f, 620f)
             MetricViewType.STEPS -> listOf(6800f, 7200f, 7842f, 8300f, 8900f, 11400f, 9600f)
             MetricViewType.WATER -> listOf(1800f, 2100f, 1600f, 2200f, 2400f, 2500f, 2100f)
-            MetricViewType.EXERCISE -> listOf(35f, 40f, 42f, 45f, 50f, 65f, 55f)
         }
 
         return dayLabels.mapIndexed { idx, label ->
@@ -697,7 +695,6 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
                     MetricViewType.CALORIES -> metrics[metrics.size - 1 - idx].activeCalories.toFloat()
                     MetricViewType.STEPS -> metrics[metrics.size - 1 - idx].steps.toFloat()
                     MetricViewType.WATER -> metrics[metrics.size - 1 - idx].waterMl.toFloat()
-                    MetricViewType.EXERCISE -> metrics[metrics.size - 1 - idx].exerciseMinutes.toFloat()
                 }
             } else defaultVals.getOrElse(idx) { 450f }
 
