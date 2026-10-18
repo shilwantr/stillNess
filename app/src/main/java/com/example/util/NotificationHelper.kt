@@ -19,9 +19,11 @@ class NotificationHelper(private val context: Context) {
     companion object {
         const val CHANNEL_WELLNESS = "channel_still_wellness"
         const val CHANNEL_APPOINTMENTS = "channel_still_appointments"
+        const val CHANNEL_MEDIA = "channel_still_media"
         const val NOTIF_ID_HYDRATION = 101
         const val NOTIF_ID_WELLNESS = 102
         const val NOTIF_ID_APPOINTMENT = 103
+        const val NOTIF_ID_MEDIA = 200
     }
 
     init {
@@ -49,8 +51,18 @@ class NotificationHelper(private val context: Context) {
                 enableVibration(true)
             }
 
+            val mediaChannel = NotificationChannel(
+                CHANNEL_MEDIA,
+                "Sound & Music Playback",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = "Displays ongoing sound, music, and soundscape playback notifications"
+                setShowBadge(false)
+            }
+
             notificationManager.createNotificationChannel(wellnessChannel)
             notificationManager.createNotificationChannel(appointmentChannel)
+            notificationManager.createNotificationChannel(mediaChannel)
         }
     }
 
@@ -125,6 +137,53 @@ class NotificationHelper(private val context: Context) {
 
         try {
             notificationManager.notify(NOTIF_ID_APPOINTMENT, notification)
+        } catch (_: SecurityException) {}
+    }
+
+    fun showPlaybackNotification(
+        title: String,
+        subtitle: String,
+        isPlaying: Boolean = true
+    ) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val permission = ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.POST_NOTIFICATIONS
+            )
+            if (permission != PackageManager.PERMISSION_GRANTED) return
+        }
+
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            2,
+            intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        val iconRes = if (isPlaying) android.R.drawable.ic_media_play else android.R.drawable.ic_media_pause
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_MEDIA)
+            .setSmallIcon(iconRes)
+            .setContentTitle(title)
+            .setContentText(subtitle)
+            .setSubText("STILL Audio")
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setOngoing(isPlaying)
+            .setAutoCancel(!isPlaying)
+            .setContentIntent(pendingIntent)
+            .build()
+
+        try {
+            notificationManager.notify(NOTIF_ID_MEDIA, notification)
+        } catch (_: SecurityException) {}
+    }
+
+    fun dismissPlaybackNotification() {
+        try {
+            notificationManager.cancel(NOTIF_ID_MEDIA)
         } catch (_: SecurityException) {}
     }
 
