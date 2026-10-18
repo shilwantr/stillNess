@@ -366,6 +366,7 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
         if (_isBreathingActive.value && !_isBreathingPaused.value) return
         if (_isBreathingPaused.value) {
             _isBreathingPaused.value = false
+            notificationHelper.showPlaybackNotification(_breathingMode.value.title, "Active Breathing Practice • Chimes On", isPlaying = true)
             runBreathingCycle()
             return
         }
@@ -378,12 +379,14 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
         _orbExpansionFraction.value = 0.28f
         audioSoundManager.resetBreathingChimeMelody()
         audioSoundManager.playBreathingPhaseChime()
+        notificationHelper.showPlaybackNotification(_breathingMode.value.title, "Active Breathing Practice • Chimes On", isPlaying = true)
         runBreathingCycle()
     }
 
     fun pauseBreathingSession() {
         _isBreathingPaused.value = true
         breathingJob?.cancel()
+        notificationHelper.showPlaybackNotification(_breathingMode.value.title, "Breathing Practice Paused", isPlaying = false)
     }
 
     fun stopBreathingSession() {
@@ -392,6 +395,7 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
         breathingJob?.cancel()
         _orbExpansionFraction.value = 0.5f
         audioSoundManager.resetBreathingChimeMelody()
+        notificationHelper.dismissPlaybackNotification()
 
         val completedSecs = (_breathingDurationMinutes.value * 60) - _totalBreathingSecondsRemaining.value
         if (completedSecs > 15) {
@@ -520,6 +524,12 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
             audioSoundManager.startAmbientSound(baseFreq, secFreq)
         }
 
+        notificationHelper.showPlaybackNotification(
+            title = track.title,
+            subtitle = "Playing • ${track.category} (${track.durationMinutes} min)",
+            isPlaying = true
+        )
+
         meditationJob?.cancel()
         meditationJob = viewModelScope.launch {
             while (_isMeditationPlaying.value && _meditationRemainingSeconds.value > 0) {
@@ -534,6 +544,13 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
         _isMeditationPlaying.value = false
         meditationJob?.cancel()
         audioSoundManager.stopAmbientSound()
+
+        val trackTitle = _activeMeditationTrack.value?.title ?: "Meditation Track"
+        notificationHelper.showPlaybackNotification(
+            title = trackTitle,
+            subtitle = "Paused",
+            isPlaying = false
+        )
     }
 
     fun stopMeditation() {
@@ -542,6 +559,7 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
         _isMeditationPlaying.value = false
         meditationJob?.cancel()
         audioSoundManager.stopAmbientSound()
+        notificationHelper.dismissPlaybackNotification()
 
         if (track != null) {
             val completed = (track.durationMinutes * 60) - remaining
@@ -558,6 +576,7 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
         if (_activeAmbientSound.value?.id == sound.id) {
             _activeAmbientSound.value = null
             audioSoundManager.stopAmbientSound()
+            notificationHelper.dismissPlaybackNotification()
         } else {
             _activeAmbientSound.value = sound
             if (sound.audioUrl.isNotBlank()) {
@@ -565,6 +584,11 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
             } else {
                 audioSoundManager.startAmbientSound(sound.frequency, sound.secondaryFrequency)
             }
+            notificationHelper.showPlaybackNotification(
+                title = sound.name,
+                subtitle = "Playing • Calming Soundscape",
+                isPlaying = true
+            )
         }
     }
 

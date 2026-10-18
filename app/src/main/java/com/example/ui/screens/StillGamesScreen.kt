@@ -848,7 +848,7 @@ private fun TileShift2048Game() {
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(1f),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.TopStart
         ) {
             val spacing = 10.dp
             val cellSize = (maxWidth - spacing * 3) / 4
