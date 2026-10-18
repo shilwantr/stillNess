@@ -271,12 +271,17 @@ class AudioSoundManager(private val context: Context) {
 
     private var mediaPlayer: android.media.MediaPlayer? = null
 
-    fun playAudioUrl(url: String, loop: Boolean = true) {
+    fun playAudioUrl(url: String, loop: Boolean = true, localCachePath: String? = null) {
         stopAmbientSound()
         try {
             mediaPlayer?.release()
             mediaPlayer = android.media.MediaPlayer().apply {
-                setDataSource(url)
+                val dataSource = if (localCachePath != null && java.io.File(localCachePath).exists()) {
+                    localCachePath
+                } else {
+                    url
+                }
+                setDataSource(dataSource)
                 isLooping = loop
                 setVolume(currentVolume, currentVolume)
                 setOnPreparedListener { start() }
