@@ -17,6 +17,12 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.runtime.remember
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -26,21 +32,22 @@ import kotlin.math.sin
  * Updated to feature Option A (Midnight Sage), Option B (Nordic Twilight), and Option C (Warm Linen & Olive).
  */
 enum class AmbientTheme(val label: String, val subtitle: String) {
-    NIGHT_FERRIS_WHEEL("Midnight Sage", "Option A: Earthy forest slate, celadon sage & warm sand sanctuary"),
-    AURORA_SILK("Nordic Twilight", "Option B: Abyssal navy, moonlight blue & soft dusk lavender"),
-    DAYLIGHT_ETHEREAL("Warm Linen", "Option C: Paper-like warm oat, soft stone & olive grove light mode"),
-    COSMIC_DUSK("Cosmic Dusk", "Deep ultraviolet nebula and twilight amber glow"),
-    OCEAN_ABYSS("Ocean Dawn", "Animated ocean waves with a moving sunrise"),
-    FOREST_RAIN("Forest Rain", "Cinematic mist, soft rain, and deep forest sage"),
-    BIOLUMINESCENT_WAKE("Deep Abyssal Wake", "A hypnotic top-down view of an illuminated boat cutting through pitch-black water"),
-    FERRIS_WHEEL("Night Ferris Wheel", "Cinemagraph of an illuminated Ferris wheel against a pure black sky")
+    AURORA_SILK("NT", "Nordic Twilight: Abyssal navy, moonlight blue & soft dusk lavender"),
+    FERRIS_WHEEL("FW", "Night Ferris Wheel: Cinemagraph of an illuminated Ferris wheel against a pure black sky"),
+    TIME_DYNAMIC("TD", "Time Dynamic: Adaptive morning, afternoon & evening glass waves"),
+    LOOPING_TRIOS("LT", "Looping Trios: Deep obsidian dark with animated geometry")
 }
 
 @Composable
 fun CosmicHorizonCanvas(
     modifier: Modifier = Modifier,
-    theme: AmbientTheme = AmbientTheme.NIGHT_FERRIS_WHEEL
+    theme: AmbientTheme = AmbientTheme.AURORA_SILK
 ) {
+    if (theme == AmbientTheme.LOOPING_TRIOS) {
+        LoopingTriosBackground(modifier = modifier)
+        return
+    }
+
     val infiniteTransition = rememberInfiniteTransition(label = "LiquidAuroraMotion")
 
     val phase1 by infiniteTransition.animateFloat(
@@ -78,17 +85,15 @@ fun CosmicHorizonCanvas(
         val h = size.height
 
         when (theme) {
-            AmbientTheme.NIGHT_FERRIS_WHEEL -> drawMidnightSage(w, h, phase1, phase2, pulse)
             AmbientTheme.AURORA_SILK -> drawNordicTwilight(w, h, phase1, phase2, pulse)
-            AmbientTheme.DAYLIGHT_ETHEREAL -> drawWarmLinen(w, h, phase1, phase2, pulse)
-            AmbientTheme.COSMIC_DUSK -> drawCosmicDusk(w, h, phase1, phase2, pulse)
-            AmbientTheme.OCEAN_ABYSS -> drawOceanAbyss(w, h, phase1, phase2, pulse)
-            AmbientTheme.FOREST_RAIN -> drawForestRain(w, h, phase1, phase2, pulse)
-            AmbientTheme.BIOLUMINESCENT_WAKE -> drawBioluminescentWake(w, h, phase1, phase2, pulse)
             AmbientTheme.FERRIS_WHEEL -> drawFerrisWheel(w, h, phase1, phase2, pulse)
+            AmbientTheme.TIME_DYNAMIC -> drawTimeDynamic(w, h, phase1, phase2, pulse)
+            AmbientTheme.LOOPING_TRIOS -> Unit // Handled via separate Composable call if needed, or by Canvas draw directly
         }
 
-        drawFloatingLightMotes(w, h, phase1)
+        if (theme != AmbientTheme.LOOPING_TRIOS) {
+            drawFloatingLightMotes(w, h, phase1)
+        }
     }
 }
 
@@ -967,6 +972,426 @@ private fun DrawScope.drawFerrisWheel(w: Float, h: Float, p1: Float, p2: Float, 
                 size = androidx.compose.ui.geometry.Size(cabinWidth + 8f, cabinHeight + 8f),
                 cornerRadius = androidx.compose.ui.geometry.CornerRadius(10f)
             )
+        }
+    }
+}
+
+/**
+ * Time Dynamic Theme (TD): Adaptive Morning, Afternoon, and Evening/Night Glass Pillar Wave
+ * Renders vertical glass panels with a sharp, high-definition sweeping U-shaped parabolic arc of light
+ * that dynamically changes color based on the time of day (Morning / Afternoon / Evening).
+ */
+private fun DrawScope.drawTimeDynamic(
+    w: Float,
+    h: Float,
+    p1: Float,
+    p2: Float,
+    pulse: Float
+) {
+    val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+
+    val baseDark: Color
+    val panelDark: Color
+    val midGlow: Color
+    val brightCore: Color
+    val highlightEdge: Color
+    val coreWhite: Color = Color.White
+
+    when (hour) {
+        in 5..11 -> { // Morning / Dawn (Crisp Celadon Green & Sage)
+            baseDark = Color(0xFF030D08)
+            panelDark = Color(0xFF081C12)
+            midGlow = Color(0xFF2C5E3B)
+            brightCore = Color(0xFF8FD870)
+            highlightEdge = Color(0xFFE2FFB0)
+        }
+        in 12..17 -> { // Afternoon / Dusk (Crisp Golden Amber & Sun)
+            baseDark = Color(0xFF0D0703)
+            panelDark = Color(0xFF1E1007)
+            midGlow = Color(0xFF5E3C21)
+            brightCore = Color(0xFFD89B58)
+            highlightEdge = Color(0xFFFFF1C6)
+        }
+        else -> { // Night / Evening (Crisp Deep Indigo & Violet)
+            baseDark = Color(0xFF04040E)
+            panelDark = Color(0xFF0B0B20)
+            midGlow = Color(0xFF2B295B)
+            brightCore = Color(0xFF7B76D8)
+            highlightEdge = Color(0xFFDCDAEE)
+        }
+    }
+
+    // 1. Deep High-Contrast Canvas
+    drawRect(color = baseDark)
+
+    val numPanels = 7
+    val panelWidth = w / numPanels
+    val waveOffset = sin(p1) * 8f
+
+    // Pre-calculate parabolic arc Y coordinates across panels for crisp smooth continuity
+    val arcYList = FloatArray(numPanels)
+    for (i in 0 until numPanels) {
+        val panelCenterX = (i + 0.5f) * panelWidth
+        val normDist = (panelCenterX - (w / 2f)) / (w * 0.48f)
+        val arcCenterY = h * 0.63f + waveOffset + (sin(p2 + i * 0.4f) * 6f)
+        arcYList[i] = arcCenterY + (normDist * normDist) * (h * 0.24f)
+    }
+
+    // 2. Draw 7 Sharp Glass Column Panels
+    for (i in 0 until numPanels) {
+        val left = i * panelWidth
+        val right = (i + 1) * panelWidth
+        val panelCenterX = (left + right) / 2f
+        val arcY = arcYList[i]
+
+        // Sharp Vertical Column Background
+        drawRect(
+            brush = Brush.verticalGradient(
+                colors = listOf(
+                    baseDark,
+                    panelDark,
+                    midGlow.copy(alpha = 0.35f),
+                    baseDark
+                ),
+                startY = 0f,
+                endY = h
+            ),
+            topLeft = Offset(left, 0f),
+            size = androidx.compose.ui.geometry.Size(panelWidth, h)
+        )
+
+        // Focused Crisp Arc Light Beam inside Column
+        val bandTop = (arcY - 100f * pulse).coerceAtLeast(0f)
+        val bandBottom = (arcY + 110f * pulse).coerceAtMost(h)
+        if (bandBottom > bandTop) {
+            drawRect(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        Color.Transparent,
+                        midGlow.copy(alpha = 0.25f),
+                        brightCore.copy(alpha = 0.75f),
+                        highlightEdge.copy(alpha = 0.95f),
+                        coreWhite.copy(alpha = 0.85f),
+                        brightCore.copy(alpha = 0.65f),
+                        midGlow.copy(alpha = 0.20f),
+                        Color.Transparent
+                    ),
+                    startY = bandTop,
+                    endY = bandBottom
+                ),
+                topLeft = Offset(left, bandTop),
+                size = androidx.compose.ui.geometry.Size(panelWidth, bandBottom - bandTop)
+            )
+        }
+
+        // Inner Sharp Specular Edge Highlight on Column
+        drawLine(
+            brush = Brush.verticalGradient(
+                colors = listOf(
+                    Color.Transparent,
+                    highlightEdge.copy(alpha = 0.30f),
+                    highlightEdge.copy(alpha = 0.75f),
+                    Color.Transparent
+                ),
+                startY = (arcY - 80f).coerceAtLeast(0f),
+                endY = (arcY + 80f).coerceAtMost(h)
+            ),
+            start = Offset(left + 1.5f, 0f),
+            end = Offset(left + 1.5f, h),
+            strokeWidth = 1f
+        )
+    }
+
+    // 3. Crisp Continuous Parabolic Arc Curve Rim Line across screen
+    val arcPath = Path()
+    for (i in 0 until numPanels) {
+        val x = (i + 0.5f) * panelWidth
+        val y = arcYList[i]
+        if (i == 0) {
+            arcPath.moveTo(x - panelWidth / 2f, y)
+            arcPath.lineTo(x, y)
+        } else {
+            val prevX = ((i - 1) + 0.5f) * panelWidth
+            val prevY = arcYList[i - 1]
+            val midX = (prevX + x) / 2f
+            val midY = (prevY + y) / 2f
+            arcPath.quadraticTo(prevX, prevY, midX, midY)
+        }
+    }
+    val lastX = w
+    val lastY = arcYList[numPanels - 1]
+    arcPath.lineTo(lastX, lastY)
+
+    // Draw Razor-Sharp Glowing Arc Line
+    drawPath(
+        path = arcPath,
+        brush = Brush.horizontalGradient(
+            colors = listOf(
+                brightCore.copy(alpha = 0.50f),
+                highlightEdge.copy(alpha = 0.95f),
+                coreWhite.copy(alpha = 0.99f),
+                highlightEdge.copy(alpha = 0.95f),
+                brightCore.copy(alpha = 0.50f)
+            )
+        ),
+        style = Stroke(width = 2.5f)
+    )
+
+    // 4. Sharp Razor Glass Partition Seam Lines (Vertical Panel Dividers)
+    for (i in 1 until numPanels) {
+        val seamX = i * panelWidth
+        val arcYAtSeam = arcYList[i.coerceIn(0, numPanels - 1)]
+
+        // Sharp Outer Glow Line (1.8px)
+        drawLine(
+            brush = Brush.verticalGradient(
+                colors = listOf(
+                    highlightEdge.copy(alpha = 0.08f),
+                    highlightEdge.copy(alpha = 0.45f),
+                    coreWhite.copy(alpha = 0.85f),
+                    highlightEdge.copy(alpha = 0.45f),
+                    highlightEdge.copy(alpha = 0.08f)
+                ),
+                startY = 0f,
+                endY = h
+            ),
+            start = Offset(seamX, 0f),
+            end = Offset(seamX, h),
+            strokeWidth = 1.8f
+        )
+
+        // Super-sharp 1.0px Specular Core Line
+        drawLine(
+            brush = Brush.verticalGradient(
+                colors = listOf(
+                    Color.Transparent,
+                    coreWhite.copy(alpha = 0.30f),
+                    coreWhite.copy(alpha = 0.95f),
+                    coreWhite.copy(alpha = 0.30f),
+                    Color.Transparent
+                ),
+                startY = (arcYAtSeam - 120f).coerceAtLeast(0f),
+                endY = (arcYAtSeam + 120f).coerceAtMost(h)
+            ),
+            start = Offset(seamX, 0f),
+            end = Offset(seamX, h),
+            strokeWidth = 1.0f
+        )
+    }
+}
+
+@Composable
+fun LoopingTriosBackground(
+    modifier: Modifier = Modifier,
+    backgroundColor: Color = Color(0xFF0B0E14), // Deep obsidian dark
+    solidTriangleColor: Color = Color(0xFF1A2230), // Muted dark slate
+    stripeTriangleColor: Color = Color(0xFF283447), // Subtle slate for hatched lines
+    cellSizeDp: Float = 150f
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "LoopingTrios")
+
+    // 8-second cycle split into 4 stepped 90-degree phases with brief pauses
+    val phase by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 4f,
+        animationSpec = infiniteRepeatable(
+            animation = androidx.compose.animation.core.keyframes {
+                durationMillis = 8000
+                0f at 0 using FastOutSlowInEasing
+                0f at 450 using FastOutSlowInEasing
+                1f at 2000 using FastOutSlowInEasing
+                1f at 2450 using FastOutSlowInEasing
+                2f at 4000 using FastOutSlowInEasing
+                2f at 4450 using FastOutSlowInEasing
+                3f at 6000 using FastOutSlowInEasing
+                3f at 6450 using FastOutSlowInEasing
+                4f at 8000 using FastOutSlowInEasing
+            },
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "PhaseAnimation"
+    )
+
+    val ReusablePath = remember { Path() }
+    val density = androidx.compose.ui.platform.LocalDensity.current.density
+
+    Box(modifier = modifier.fillMaxSize().background(backgroundColor)) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val cellW = cellSizeDp * density
+            val cellH = cellSizeDp * 1.15f * density
+            val triR = cellW * 0.18f // Base radius of each triangle
+
+            val cols = kotlin.math.ceil((size.width / cellW).toDouble()).toInt() + 2
+            val rows = kotlin.math.ceil((size.height / cellH).toDouble()).toInt() + 2
+
+            // Angles driven by the 0..4 stepped phase
+            val primaryAngle = phase * 90f
+            val secondaryAngle = -phase * 90f
+
+            for (col in -1 until cols) {
+                for (row in -1 until rows) {
+                    val baseX = col * cellW
+                    val baseY = row * cellH
+
+                    // Each grid cell renders a staggered pair of trios (left and shifted-up right)
+                    drawTrioUnit(
+                        centerX = baseX + cellW * 0.28f,
+                        centerY = baseY + cellH * 0.58f,
+                        r = triR,
+                        primaryAngle = primaryAngle,
+                        secondaryAngle = secondaryAngle,
+                        solidColor = solidTriangleColor,
+                        stripeColor = stripeTriangleColor,
+                        path = ReusablePath,
+                        density = density
+                    )
+
+                    drawTrioUnit(
+                        centerX = baseX + cellW * 0.72f,
+                        centerY = baseY + cellH * 0.32f,
+                        r = triR,
+                        primaryAngle = primaryAngle,
+                        secondaryAngle = secondaryAngle,
+                        solidColor = solidTriangleColor,
+                        stripeColor = stripeTriangleColor,
+                        path = ReusablePath,
+                        density = density
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun DrawScope.drawTrioUnit(
+    centerX: Float,
+    centerY: Float,
+    r: Float,
+    primaryAngle: Float,
+    secondaryAngle: Float,
+    solidColor: Color,
+    stripeColor: Color,
+    path: Path,
+    density: Float
+) {
+    val verticalOffset = r * 1.05f
+
+    // 1. Center-connecting striped triangle
+    withTransform({
+        translate(centerX, centerY)
+        rotate(secondaryAngle, pivot = Offset.Zero)
+    }) {
+        drawStripedTriangle(
+            path = path,
+            p1 = Offset(0f, -verticalOffset),
+            p2 = Offset(0f, verticalOffset),
+            p3 = Offset(-r * 1.1f, 0f),
+            color = stripeColor,
+            stripeAngle = primaryAngle,
+            density = density
+        )
+    }
+
+    // 2. Top solid triangle + top-cap striped triangle
+    withTransform({
+        translate(centerX, centerY - verticalOffset)
+        rotate(primaryAngle, pivot = Offset.Zero)
+    }) {
+        // Top-cap striped accent
+        drawStripedTriangle(
+            path = path,
+            p1 = Offset(0f, -r),
+            p2 = Offset(-r * 1.1f, -r * 0.35f),
+            p3 = Offset(r * 0.85f, 0f),
+            color = stripeColor,
+            stripeAngle = -primaryAngle,
+            density = density
+        )
+        // Top solid triangle (pointing up)
+        drawSolidTriangle(
+            path = path,
+            p1 = Offset(0f, -r),
+            p2 = Offset(-r * 0.95f, 0f),
+            p3 = Offset(r * 0.95f, 0f),
+            color = solidColor
+        )
+    }
+
+    // 3. Bottom solid triangle + bottom-cap striped triangle
+    withTransform({
+        translate(centerX, centerY + verticalOffset)
+        rotate(primaryAngle, pivot = Offset.Zero)
+    }) {
+        // Bottom-cap striped accent
+        drawStripedTriangle(
+            path = path,
+            p1 = Offset(0f, r),
+            p2 = Offset(-r * 1.1f, r * 0.35f),
+            p3 = Offset(r * 0.85f, 0f),
+            color = stripeColor,
+            stripeAngle = -primaryAngle,
+            density = density
+        )
+        // Bottom solid triangle (pointing down)
+        drawSolidTriangle(
+            path = path,
+            p1 = Offset(0f, r),
+            p2 = Offset(-r * 0.95f, 0f),
+            p3 = Offset(r * 0.95f, 0f),
+            color = solidColor
+        )
+    }
+}
+
+private fun DrawScope.drawSolidTriangle(
+    path: Path,
+    p1: Offset,
+    p2: Offset,
+    p3: Offset,
+    color: Color
+) {
+    path.reset()
+    path.moveTo(p1.x, p1.y)
+    path.lineTo(p2.x, p2.y)
+    path.lineTo(p3.x, p3.y)
+    path.close()
+    drawPath(path = path, color = color)
+}
+
+private fun DrawScope.drawStripedTriangle(
+    path: Path,
+    p1: Offset,
+    p2: Offset,
+    p3: Offset,
+    color: Color,
+    stripeAngle: Float,
+    density: Float
+) {
+    path.reset()
+    path.moveTo(p1.x, p1.y)
+    path.lineTo(p2.x, p2.y)
+    path.lineTo(p3.x, p3.y)
+    path.close()
+
+    val cx = (p1.x + p2.x + p3.x) / 3f
+    val cy = (p1.y + p2.y + p3.y) / 3f
+    val maxExtent = 120f
+    val step = 4.5f * density
+
+    clipPath(path) {
+        withTransform({
+            rotate(stripeAngle, pivot = Offset(cx, cy))
+        }) {
+            var y = cy - maxExtent
+            while (y <= cy + maxExtent) {
+                drawLine(
+                    color = color,
+                    start = Offset(cx - maxExtent, y),
+                    end = Offset(cx + maxExtent, y),
+                    strokeWidth = 1.6f * density
+                )
+                y += step
+            }
         }
     }
 }

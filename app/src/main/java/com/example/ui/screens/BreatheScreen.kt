@@ -52,6 +52,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -77,6 +82,11 @@ import com.example.ui.theme.TextWhite
 import com.example.ui.theme.VioletBright
 import com.example.ui.viewmodel.WellnessViewModel
 
+enum class PracticeMainMode(val label: String) {
+    BREATHE("Breathe"),
+    HEAL("Heal")
+}
+
 enum class BreatheTab(val label: String) {
     RELAXING("Relaxing"),
     MEDITATION("Meditation"),
@@ -88,6 +98,9 @@ fun BreatheScreen(
     viewModel: WellnessViewModel,
     modifier: Modifier = Modifier
 ) {
+    val pagerState = rememberPagerState(pageCount = { PracticeMainMode.values().size })
+    val coroutineScope = rememberCoroutineScope()
+    val practiceMainMode = PracticeMainMode.values()[pagerState.currentPage]
     var subTab by remember { mutableStateOf(BreatheTab.RELAXING) }
     var currentVisualStyle by remember { mutableStateOf(GlassStyle.BALLOON) }
 
@@ -110,8 +123,6 @@ fun BreatheScreen(
     val ambientSounds by viewModel.ambientSounds.collectAsState()
     val ambientVol by viewModel.ambientVolume.collectAsState()
 
-    val scrollState = rememberScrollState()
-
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -120,257 +131,325 @@ fun BreatheScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(scrollState)
                 .statusBarsPadding()
-                .padding(horizontal = 20.dp, vertical = 8.dp)
+                .padding(top = 8.dp)
         ) {
-            Text(
-                text = "B R E A T H E",
-                color = TextWhite,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Light,
-                letterSpacing = 8.sp,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
+            // Header Row with Side-by-Side Mode Switcher (Breathe | Heal)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = if (practiceMainMode == PracticeMainMode.BREATHE) "B R E A T H E" else "H E A L",
+                    color = TextWhite,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Light,
+                    letterSpacing = 8.sp
+                )
 
-                        // 1. Signature 3D Liquid Glass Bubble Hero Card
-GlassCard(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(440.dp),
-                        cornerRadius = 32.dp,
-                        borderBrush = GlassBorderActiveCyan,
-                        elevation = 14.dp,
-                        testTag = "card_breathing_orb_hero"
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(22.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            // Phase and Cue Header
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(
-                                    text = if (isBreathingActive) breathingPhase.label else breathingMode.title,
-                                    color = CyanBright,
-                                    fontSize = 24.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    letterSpacing = 0.8.sp
+                // Side-by-Side Practice Mode Switcher
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(22.dp))
+                        .background(Color.White.copy(alpha = 0.10f))
+                        .border(0.8.dp, FrostedGlassBorder, RoundedCornerShape(22.dp))
+                        .padding(3.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    PracticeMainMode.values().forEach { mode ->
+                        val isSel = mode == practiceMainMode
+                        val bgBrush = if (isSel) {
+                            Brush.horizontalGradient(
+                                listOf(
+                                    LiquidCobalt.copy(alpha = 0.55f),
+                                    CyanGlow.copy(alpha = 0.35f)
                                 )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = if (isBreathingActive) breathingPhase.cueText else breathingMode.description,
-                                    color = TextMuted,
-                                    fontSize = 12.sp,
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier.padding(horizontal = 12.dp)
-                                )
-                            }
-
-                            // Centered Smooth 3D Refractive Liquid Glass Bubble
-                            Box(
-                                modifier = Modifier.size(215.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                EnhancedLiquidGlassOrb(
-                                    modifier = Modifier.fillMaxSize(),
-                                    expansionFraction = orbFraction,
-                                    isBreathingActive = isBreathingActive,
-                                    style = currentVisualStyle
-                                )
-
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    if (isBreathingActive) {
-                                        Text(
-                                            text = "$phaseSecRemaining",
-                                            color = TextWhite,
-                                            fontSize = 36.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                        Text(
-                                            text = breathingPhase.label.uppercase(),
-                                            color = Color.White.copy(alpha = 0.78f),
-                                            fontSize = 10.sp,
-                                            fontWeight = FontWeight.SemiBold,
-                                            letterSpacing = 1.5.sp
-                                        )
-                                    } else {
-                                        Text(
-                                            text = "${breathingMode.inhaleSeconds}-${breathingMode.holdAfterInhaleSeconds}-${breathingMode.exhaleSeconds}",
-                                            color = Color.White.copy(alpha = 0.90f),
-                                            fontSize = 18.sp,
-                                            fontWeight = FontWeight.SemiBold
-                                        )
-                                        Text(
-                                            text = "GLASS BUBBLE",
-                                            color = CyanBright.copy(alpha = 0.80f),
-                                            fontSize = 9.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            letterSpacing = 1.4.sp
-                                        )
-                                    }
-                                }
-                            }
-
-                            // Controls Row
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                val totalMin = totalSecRemaining / 60
-                                val totalSec = totalSecRemaining % 60
-                                Text(
-                                    text = String.format("%02d:%02d remaining", totalMin, totalSec),
-                                    color = TextSubtle,
-                                    fontSize = 12.sp
-                                )
-
-                                Spacer(modifier = Modifier.height(10.dp))
-
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    if (isBreathingActive) {
-                                        GlassIconButton(
-                                            onClick = {
-                                                if (isBreathingPaused) viewModel.startBreathingSession()
-                                                else viewModel.pauseBreathingSession()
-                                            },
-                                            size = 54.dp,
-                                            testTag = "btn_pause_breathing"
-                                        ) {
-                                            Icon(
-                                                imageVector = if (isBreathingPaused) Icons.Default.PlayArrow else Icons.Default.Pause,
-                                                contentDescription = "Pause",
-                                                tint = TextWhite,
-                                                modifier = Modifier.size(28.dp)
-                                            )
-                                        }
-
-                                        GlassIconButton(
-                                            onClick = { viewModel.stopBreathingSession() },
-                                            size = 54.dp,
-                                            isActive = true,
-                                            testTag = "btn_stop_breathing"
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Stop,
-                                                contentDescription = "Stop",
-                                                tint = TextWhite,
-                                                modifier = Modifier.size(28.dp)
-                                            )
-                                        }
-                                    } else {
-                                        GlassButton(
-                                            text = "Begin ${breathingMode.title}",
-                                            onClick = { viewModel.startBreathingSession() },
-                                            isActive = true,
-                                            modifier = Modifier.width(220.dp),
-                                            testTag = "btn_start_breathing"
-                                        )
-                                    }
-                                }
-                            }
+                            )
+                        } else {
+                            Brush.horizontalGradient(listOf(Color.Transparent, Color.Transparent))
                         }
-                    }
-
-                    Spacer(modifier = Modifier.height(18.dp))
-
-                    // Animation Style Selector
-                    Text(
-                        text = "Visual Animation Style",
-                        color = TextWhite,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        GlassStyle.values().forEach { style ->
-                            GlassButton(
-                                text = style.label,
-                                onClick = { currentVisualStyle = style },
-                                isActive = style == currentVisualStyle,
-                                modifier = Modifier.weight(1f)
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(18.dp))
+                                .background(bgBrush)
+                                .border(
+                                    0.8.dp,
+                                    if (isSel) GlassBorderActiveCyan else SolidColor(Color.Transparent),
+                                    RoundedCornerShape(18.dp)
+                                )
+                                .clickable {
+                                    coroutineScope.launch {
+                                        pagerState.animateScrollToPage(mode.ordinal)
+                                    }
+                                }
+                                .padding(horizontal = 14.dp, vertical = 6.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = mode.label,
+                                color = if (isSel) TextWhite else Color.White.copy(alpha = 0.65f),
+                                fontSize = 12.sp,
+                                fontWeight = if (isSel) FontWeight.Bold else FontWeight.Medium
                             )
                         }
                     }
+                }
+            }
 
-                    Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-                    // Mode Selection List
-                    Text(
-                        text = "Breathing Pattern Modes",
-                        color = TextWhite,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize()
+            ) { page ->
+                val currentPageMode = PracticeMainMode.values()[page]
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 20.dp)
+                ) {
+                    if (currentPageMode == PracticeMainMode.BREATHE) {
+                // 1. Signature 3D Liquid Glass Bubble Hero Card
+                GlassCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(440.dp),
+                    cornerRadius = 32.dp,
+                    borderBrush = GlassBorderActiveCyan,
+                    elevation = 14.dp,
+                    testTag = "card_breathing_orb_hero"
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(22.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        // Phase and Cue Header
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = if (isBreathingActive) breathingPhase.label else breathingMode.title,
+                                color = CyanBright,
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.8.sp
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = if (isBreathingActive) breathingPhase.cueText else breathingMode.description,
+                                color = TextMuted,
+                                fontSize = 12.sp,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(horizontal = 12.dp)
+                            )
+                        }
 
-                    BreathingMode.values().forEach { mode ->
-                        val isSel = mode == breathingMode
-                        GlassCard(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                            cornerRadius = 20.dp,
-                            borderBrush = if (isSel) GlassBorderActiveCyan else GlassBorderGradient,
-                            onClick = { viewModel.setBreathingMode(mode) },
-                            testTag = "btn_mode_${mode.name}"
+                        // Centered Smooth 3D Refractive Liquid Glass Bubble
+                        Box(
+                            modifier = Modifier.size(215.dp),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
+                            EnhancedLiquidGlassOrb(
+                                modifier = Modifier.fillMaxSize(),
+                                expansionFraction = orbFraction,
+                                isBreathingActive = isBreathingActive,
+                                style = currentVisualStyle
+                            )
+
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                if (isBreathingActive) {
                                     Text(
-                                        mode.title,
-                                        color = if (isSel) CyanBright else TextWhite,
-                                        fontSize = 14.sp,
+                                        text = "$phaseSecRemaining",
+                                        color = TextWhite,
+                                        fontSize = 36.sp,
                                         fontWeight = FontWeight.Bold
                                     )
-                                    Text(mode.description, color = TextMuted, fontSize = 12.sp)
+                                    Text(
+                                        text = breathingPhase.label.uppercase(),
+                                        color = Color.White.copy(alpha = 0.78f),
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        letterSpacing = 1.5.sp
+                                    )
+                                } else {
+                                    Text(
+                                        text = "${breathingMode.inhaleSeconds}-${breathingMode.holdAfterInhaleSeconds}-${breathingMode.exhaleSeconds}",
+                                        color = Color.White.copy(alpha = 0.90f),
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    Text(
+                                        text = "GLASS BUBBLE",
+                                        color = CyanBright.copy(alpha = 0.80f),
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 1.4.sp
+                                    )
                                 }
-                                val patternStr = "${mode.inhaleSeconds}-${mode.holdAfterInhaleSeconds}-${mode.exhaleSeconds}-${mode.holdAfterExhaleSeconds}"
-                                Text(
-                                    patternStr,
-                                    color = if (isSel) CyanBright else TextSubtle,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.SemiBold
-                                )
+                            }
+                        }
+
+                        // Controls Row
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            val totalMin = totalSecRemaining / 60
+                            val totalSec = totalSecRemaining % 60
+                            Text(
+                                text = String.format("%02d:%02d remaining", totalMin, totalSec),
+                                color = TextSubtle,
+                                fontSize = 12.sp
+                            )
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                if (isBreathingActive) {
+                                    GlassIconButton(
+                                        onClick = {
+                                            if (isBreathingPaused) viewModel.startBreathingSession()
+                                            else viewModel.pauseBreathingSession()
+                                        },
+                                        size = 54.dp,
+                                        testTag = "btn_pause_breathing"
+                                    ) {
+                                        Icon(
+                                            imageVector = if (isBreathingPaused) Icons.Default.PlayArrow else Icons.Default.Pause,
+                                            contentDescription = "Pause",
+                                            tint = TextWhite,
+                                            modifier = Modifier.size(28.dp)
+                                        )
+                                    }
+
+                                    GlassIconButton(
+                                        onClick = { viewModel.stopBreathingSession() },
+                                        size = 54.dp,
+                                        isActive = true,
+                                        testTag = "btn_stop_breathing"
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Stop,
+                                            contentDescription = "Stop",
+                                            tint = TextWhite,
+                                            modifier = Modifier.size(28.dp)
+                                        )
+                                    }
+                                } else {
+                                    GlassButton(
+                                        text = "Begin ${breathingMode.title}",
+                                        onClick = { viewModel.startBreathingSession() },
+                                        isActive = true,
+                                        modifier = Modifier.width(220.dp),
+                                        testTag = "btn_start_breathing"
+                                    )
+                                }
                             }
                         }
                     }
+                }
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(18.dp))
 
-                    Text(
-                        text = "Target Duration",
-                        color = TextWhite,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                // Animation Style Selector
+                Text(
+                    text = "Visual Animation Style",
+                    color = TextWhite,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    GlassStyle.values().forEach { style ->
+                        GlassButton(
+                            text = style.label,
+                            onClick = { currentVisualStyle = style },
+                            isActive = style == currentVisualStyle,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Mode Selection List
+                Text(
+                    text = "Breathing Pattern Modes",
+                    color = TextWhite,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                BreathingMode.values().forEach { mode ->
+                    val isSel = mode == breathingMode
+                    GlassCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        cornerRadius = 20.dp,
+                        borderBrush = if (isSel) GlassBorderActiveCyan else GlassBorderGradient,
+                        onClick = { viewModel.setBreathingMode(mode) },
+                        testTag = "btn_mode_${mode.name}"
                     ) {
-                        listOf(2, 5, 10, 15).forEach { mins ->
-                            GlassButton(
-                                text = "$mins min",
-                                onClick = { viewModel.setBreathingDurationMinutes(mins) },
-                                isActive = mins == durationMinutes,
-                                modifier = Modifier.weight(1f)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    mode.title,
+                                    color = if (isSel) CyanBright else TextWhite,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(mode.description, color = TextMuted, fontSize = 12.sp)
+                            }
+                            val patternStr = "${mode.inhaleSeconds}-${mode.holdAfterInhaleSeconds}-${mode.exhaleSeconds}-${mode.holdAfterExhaleSeconds}"
+                            Text(
+                                patternStr,
+                                color = if (isSel) CyanBright else TextSubtle,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
                     }
+                }
 
-            Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Text(
+                    text = "Target Duration",
+                    color = TextWhite,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf(2, 5, 10, 15).forEach { mins ->
+                        GlassButton(
+                            text = "$mins min",
+                            onClick = { viewModel.setBreathingDurationMinutes(mins) },
+                            isActive = mins == durationMinutes,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            } else {
 
             // Segmented Liquid Glass Sub Tabs
             Row(
@@ -384,25 +463,25 @@ GlassCard(
             ) {
                 BreatheTab.values().forEach { tab ->
                     val isSel = tab == subTab
+                    val subBgBrush = if (isSel) {
+                        Brush.horizontalGradient(
+                            listOf(
+                                LiquidCobalt.copy(alpha = 0.55f),
+                                CyanGlow.copy(alpha = 0.35f)
+                            )
+                        )
+                    } else {
+                        Brush.horizontalGradient(listOf(Color.Transparent, Color.Transparent))
+                    }
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(22.dp))
-                            .background(
-                                if (isSel) {
-                                    Brush.horizontalGradient(
-                                        listOf(
-                                            LiquidCobalt.copy(alpha = 0.55f),
-                                            CyanGlow.copy(alpha = 0.35f)
-                                        )
-                                    )
-                                } else {
-                                    Brush.horizontalGradient(listOf(Color.Transparent, Color.Transparent))
-                                }
-                            )
-                            .then(
-                                if (isSel) Modifier.border(0.9.dp, GlassBorderActiveCyan, RoundedCornerShape(22.dp))
-                                else Modifier
+                            .background(subBgBrush)
+                            .border(
+                                0.9.dp,
+                                if (isSel) GlassBorderActiveCyan else SolidColor(Color.Transparent),
+                                RoundedCornerShape(22.dp)
                             )
                             .clickable { subTab = tab }
                             .padding(vertical = 8.dp),
@@ -927,8 +1006,11 @@ GlassCard(
                     }
                 }
             }
+            } // Closes else (PracticeMainMode.HEAL)
 
-            Spacer(modifier = Modifier.height(92.dp))
+                    Spacer(modifier = Modifier.height(92.dp))
+                }
+            }
         }
     }
 }

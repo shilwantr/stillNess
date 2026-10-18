@@ -41,7 +41,6 @@ import com.example.ui.theme.TextSubtle
 import com.example.ui.theme.TextWhite
 import com.example.ui.theme.VioletBright
 import com.example.ui.viewmodel.MetricViewType
-import com.example.ui.viewmodel.TimeframeView
 import com.example.ui.viewmodel.WellnessViewModel
 
 @Composable
@@ -50,7 +49,6 @@ fun TrendsScreen(
     modifier: Modifier = Modifier
 ) {
     val selectedMetric by viewModel.selectedMetricType.collectAsState()
-    val selectedTimeframe by viewModel.selectedTimeframe.collectAsState()
     val selectedIndex by viewModel.selectedGraphIndex.collectAsState()
     val recentMetrics by viewModel.recentMetrics.collectAsState()
 
@@ -152,34 +150,6 @@ fun TrendsScreen(
                                 fontSize = 11.sp
                             )
                         }
-
-                        // Timeframe pills
-                        Row(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(14.dp))
-                                .background(Color.White.copy(alpha = 0.08f))
-                                .border(0.7.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(14.dp))
-                                .padding(2.dp),
-                            horizontalArrangement = Arrangement.spacedBy(2.dp)
-                        ) {
-                            TimeframeView.values().forEach { tf ->
-                                val isSel = tf == selectedTimeframe
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .background(if (isSel) Color.White.copy(alpha = 0.18f) else Color.Transparent)
-                                        .clickable { viewModel.setTimeframe(tf) }
-                                        .padding(horizontal = 7.dp, vertical = 3.dp)
-                                ) {
-                                    Text(
-                                        text = tf.label,
-                                        color = if (isSel) TextWhite else Color.White.copy(alpha = 0.55f),
-                                        fontSize = 10.sp,
-                                        fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal
-                                    )
-                                }
-                            }
-                        }
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -197,7 +167,6 @@ fun TrendsScreen(
                             MetricViewType.CALORIES -> 850f
                             MetricViewType.STEPS -> 12000f
                             MetricViewType.WATER -> 3000f
-                            MetricViewType.EXERCISE -> 80f
                         }
                     )
                 }
@@ -225,7 +194,6 @@ fun TrendsScreen(
                                 MetricViewType.CALORIES -> "512 kcal"
                                 MetricViewType.STEPS -> "8,450"
                                 MetricViewType.WATER -> "2.1 L"
-                                MetricViewType.EXERCISE -> "44 min"
                             },
                             color = CyanBright,
                             fontSize = 16.sp,
