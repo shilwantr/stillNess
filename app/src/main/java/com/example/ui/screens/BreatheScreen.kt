@@ -854,6 +854,34 @@ fun BreatheScreen(
                                             fontWeight = FontWeight.Bold
                                         )
                                     }
+                                } else if (track.downloadProgress > 0f && track.downloadProgress < 1f) {
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "Downloading...",
+                                            color = TextSubtle,
+                                            fontSize = 11.sp
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Box(
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .height(4.dp)
+                                                .clip(CircleShape)
+                                                .background(Color.White.copy(alpha = 0.1f))
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth(track.downloadProgress)
+                                                    .height(4.dp)
+                                                    .clip(CircleShape)
+                                                    .background(trackColor)
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1303,6 +1331,34 @@ fun RelaxingMusicSection(
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         )
+                    }
+                } else if (track.downloadProgress > 0f && track.downloadProgress < 1f) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Downloading...",
+                            color = TextSubtle,
+                            fontSize = 11.sp
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(4.dp)
+                                .clip(CircleShape)
+                                .background(Color.White.copy(alpha = 0.1f))
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth(track.downloadProgress)
+                                    .height(4.dp)
+                                    .clip(CircleShape)
+                                    .background(trackColor)
+                            )
+                        }
                     }
                 }
             }

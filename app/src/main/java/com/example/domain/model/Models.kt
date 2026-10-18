@@ -82,7 +82,9 @@ data class MeditationTrack(
     val iconName: String = "self_improvement",
     val accentColor: String = "#38BDF8",
     val baseFrequency: Float = 432f,
-    val secondaryFrequency: Float = 648f
+    val secondaryFrequency: Float = 648f,
+    val isDownloaded: Boolean = false,
+    val downloadProgress: Float = 0f
 )
 
 data class AmbientSound(
@@ -92,5 +94,7 @@ data class AmbientSound(
     val frequency: Float = 0f,
     val secondaryFrequency: Float = 0f,
     val description: String = "",
-    val audioUrl: String = ""
+    val audioUrl: String = "",
+    val isDownloaded: Boolean = false,
+    val downloadProgress: Float = 0f
 )

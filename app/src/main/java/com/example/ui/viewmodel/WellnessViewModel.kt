@@ -192,6 +192,11 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
 
     private var breathingJob: Job? = null
 
+    // Track download progress for Meditations, Relaxing Music and Ambient Sounds
+    val meditationDownloadProgress = MutableStateFlow<Map<String, Float>>(emptyMap())
+    val relaxingMusicDownloadProgress = MutableStateFlow<Map<String, Float>>(emptyMap())
+    val ambientDownloadProgress = MutableStateFlow<Map<String, Float>>(emptyMap())
+
     // Dynamic Music & Meditation tracks streamed directly from Firestore Database
     val meditationTracks: StateFlow<List<MeditationTrack>> = repository.getMeditationTracksFlow()
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
@@ -511,13 +516,69 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
     }
 
     // Meditation & Ambient Audio
-    fun startMeditation(track: MeditationTrack) {
+    
+    private fun getLocalAudioCacheFile(id: String): java.io.File {
+        return java.io.File(appContext.cacheDir, "audio_cache_$id.mp3")
+    }
+
+    private fun downloadAudioIfNeeded(
+        id: String,
+        url: String,
+        progressMap: MutableStateFlow<Map<String, Float>>,
+        onComplete: () -> Unit
+    ) {
+        val file = getLocalAudioCacheFile(id)
+        if (file.exists() && file.length() > 0) {
+            progressMap.value = progressMap.value + (id to 1f)
+            onComplete()
+            return
+        }
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                val client = okhttp3.OkHttpClient()
+                val request = okhttp3.Request.Builder().url(url).build()
+                val response = client.newCall(request).execute()
+                response.body?.let { body ->
+                    val totalBytes = body.contentLength()
+                    var bytesCopied = 0L
+                    val buffer = ByteArray(8 * 1024)
+                    var bytes = body.source().read(buffer)
+                    file.outputStream().use { out ->
+                        while (bytes >= 0) {
+                            out.write(buffer, 0, bytes)
+                            bytesCopied += bytes
+                            val progress = if (totalBytes > 0) bytesCopied.toFloat() / totalBytes else 0f
+                            progressMap.value = progressMap.value + (id to progress)
+                            bytes = body.source().read(buffer)
+                        }
+                    }
+                }
+                launch(kotlinx.coroutines.Dispatchers.Main) { onComplete() }
+            } catch (_: Exception) {
+                file.delete()
+            }
+        }
+    }
+
+    fun startMeditation(track: MeditationTrack, isRelaxingCategory: Boolean = false) {
         _activeMeditationTrack.value = track
         _meditationRemainingSeconds.value = track.durationMinutes * 60
         _isMeditationPlaying.value = true
 
         if (track.audioUrl.isNotBlank()) {
-            audioSoundManager.playAudioUrl(track.audioUrl)
+            val localFile = getLocalAudioCacheFile(track.id)
+            val progressStateMap = if (isRelaxingCategory) relaxingMusicDownloadProgress else meditationDownloadProgress
+            
+            audioSoundManager.playAudioUrl(track.audioUrl, localCachePath = localFile.absolutePath)
+            
+            downloadAudioIfNeeded(
+                id = track.id,
+                url = track.audioUrl,
+                progressMap = progressStateMap,
+                onComplete = {
+                    progressStateMap.value = progressStateMap.value + (track.id to 1f)
+                }
+            )
         } else {
             val baseFreq = if (track.baseFrequency > 0f) track.baseFrequency else 432f
             val secFreq = if (track.secondaryFrequency > 0f) track.secondaryFrequency else 648f
@@ -580,7 +641,17 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
         } else {
             _activeAmbientSound.value = sound
             if (sound.audioUrl.isNotBlank()) {
-                audioSoundManager.playAudioUrl(sound.audioUrl)
+                val localFile = getLocalAudioCacheFile(sound.id)
+                audioSoundManager.playAudioUrl(sound.audioUrl, localCachePath = localFile.absolutePath)
+                
+                downloadAudioIfNeeded(
+                    id = sound.id,
+                    url = sound.audioUrl,
+                    progressMap = ambientDownloadProgress,
+                    onComplete = {
+                        ambientDownloadProgress.value = ambientDownloadProgress.value + (sound.id to 1f)
+                    }
+                )
             } else {
                 audioSoundManager.startAmbientSound(sound.frequency, sound.secondaryFrequency)
             }
