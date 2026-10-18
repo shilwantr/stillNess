@@ -48,6 +48,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (intent.getBooleanExtra("OPEN_EMO", false) || intent.hasExtra("EMO_MOOD")) {
+            viewModel.setEmoScreenOpen(true)
+        }
         enableEdgeToEdge()
 
         setContent {
@@ -65,6 +68,29 @@ class MainActivity : ComponentActivity() {
                     lifecycleOwner.lifecycle.addObserver(observer)
                     onDispose {
                         lifecycleOwner.lifecycle.removeObserver(observer)
+                    }
+                }
+
+                val context = androidx.compose.ui.platform.LocalContext.current
+                DisposableEffect(Unit) {
+                    val receiver = object : android.content.BroadcastReceiver() {
+                        override fun onReceive(c: android.content.Context?, intent: android.content.Intent?) {
+                            val open = intent?.getBooleanExtra("open", true) ?: true
+                            viewModel.setEmoScreenOpen(open)
+                        }
+                    }
+                    val filter = android.content.IntentFilter("com.example.TOGGLE_EMO_SCREEN")
+                    try {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            context.registerReceiver(receiver, filter, android.content.Context.RECEIVER_EXPORTED)
+                        } else {
+                            context.registerReceiver(receiver, filter)
+                        }
+                    } catch (_: Exception) {}
+                    onDispose {
+                        try {
+                            context.unregisterReceiver(receiver)
+                        } catch (_: Exception) {}
                     }
                 }
 
@@ -139,6 +165,14 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+        }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if (intent.getBooleanExtra("OPEN_EMO", false) || intent.hasExtra("EMO_MOOD")) {
+            viewModel.setEmoScreenOpen(true)
         }
     }
 }
