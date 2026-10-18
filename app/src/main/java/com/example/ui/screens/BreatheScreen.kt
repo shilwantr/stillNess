@@ -693,6 +693,7 @@ fun BreatheScreen(
                                 "favorite" -> Icons.Default.Favorite
                                 "psychology" -> Icons.Default.AutoAwesome
                                 "wb_sunny" -> Icons.Default.WbSunny
+                                "waves" -> Icons.Default.Waves
                                 else -> Icons.Default.SelfImprovement
                             }
                         }
