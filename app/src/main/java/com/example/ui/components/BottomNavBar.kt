@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.SelfImprovement
@@ -61,7 +62,7 @@ import kotlinx.coroutines.launch
 enum class StillTab(val title: String, val icon: ImageVector, val tag: String) {
     TODAY("Today", Icons.Default.Home, "nav_tab_today"),
     BREATHE("Practice", Icons.Default.SelfImprovement, "nav_tab_breathe"),
-    TRENDS("Journal", Icons.Default.BarChart, "nav_tab_trends"),
+    TRENDS("Journal", Icons.Default.EditNote, "nav_tab_trends"),
     THERAPISTS("Therapy", Icons.Default.SupportAgent, "nav_tab_therapists"),
     PROFILE("Profile", Icons.Default.Person, "nav_tab_profile")
 }

@@ -34,9 +34,9 @@ import com.example.ui.components.StillBottomNavBar
 import com.example.ui.components.StillTab
 import com.example.ui.screens.BreatheScreen
 import com.example.ui.screens.DashboardScreen
+import com.example.ui.screens.JournalScreen
 import com.example.ui.screens.ProfileScreen
 import com.example.ui.screens.TherapistScreen
-import com.example.ui.screens.TrendsScreen
 import com.example.ui.screens.VoiceCallScreen
 import com.example.ui.theme.MidnightDark
 import com.example.ui.theme.MyApplicationTheme
@@ -50,6 +50,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         if (intent.getBooleanExtra("OPEN_EMO", false) || intent.hasExtra("EMO_MOOD")) {
             viewModel.setEmoScreenOpen(true)
+        }
+        intent.getStringExtra("OPEN_TAB")?.let { tabName ->
+            try {
+                viewModel.setTab(com.example.ui.components.StillTab.valueOf(tabName))
+            } catch (_: Exception) {}
         }
         enableEdgeToEdge()
 
@@ -151,7 +156,7 @@ class MainActivity : ComponentActivity() {
                                 ) { tab ->
                                     when (tab) {
                                         StillTab.TODAY -> DashboardScreen(viewModel = viewModel)
-                                        StillTab.TRENDS -> TrendsScreen(viewModel = viewModel)
+                                        StillTab.TRENDS -> JournalScreen(viewModel = viewModel)
                                         StillTab.BREATHE -> BreatheScreen(viewModel = viewModel)
                                         StillTab.THERAPISTS -> TherapistScreen(
                                             viewModel = viewModel,
@@ -173,6 +178,11 @@ class MainActivity : ComponentActivity() {
         setIntent(intent)
         if (intent.getBooleanExtra("OPEN_EMO", false) || intent.hasExtra("EMO_MOOD")) {
             viewModel.setEmoScreenOpen(true)
+        }
+        intent.getStringExtra("OPEN_TAB")?.let { tabName ->
+            try {
+                viewModel.setTab(com.example.ui.components.StillTab.valueOf(tabName))
+            } catch (_: Exception) {}
         }
     }
 }

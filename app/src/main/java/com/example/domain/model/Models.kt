@@ -100,3 +100,15 @@ data class AmbientSound(
     val isDownloaded: Boolean = false,
     val downloadProgress: Float = 0f
 )
+
+data class JournalEntry(
+    val id: Long = 0,
+    val date: String = "",
+    val timestamp: Long = System.currentTimeMillis(),
+    val title: String = "",
+    val content: String = "",
+    val mood: String = "CALM",
+    val stepCountAtEntry: Int = 0,
+    val waterMlAtEntry: Int = 0
+)
+

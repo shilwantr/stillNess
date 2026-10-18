@@ -7,6 +7,7 @@ import com.example.data.local.AppDatabase
 import com.example.data.local.entities.AppointmentEntity
 import com.example.data.local.entities.DailyMetricEntity
 import com.example.data.local.entities.FavoriteQuoteEntity
+import com.example.data.local.entities.JournalEntryEntity
 import com.example.data.local.entities.PaymentRecordEntity
 import com.example.data.local.entities.WaterEntryEntity
 import com.example.data.local.entities.WellnessSessionEntity
@@ -23,6 +24,9 @@ import com.example.ui.glass.MoodState
 import com.example.util.AudioSoundManager
 import com.example.util.NotificationHelper
 import com.example.util.StepSensorManager
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 import android.content.Context
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
@@ -154,6 +158,9 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     val completedSessions: StateFlow<List<WellnessSessionEntity>> = repository.getAllSessionsFlow()
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    val journalEntries: StateFlow<List<JournalEntryEntity>> = repository.getJournalEntriesFlow()
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     // Dashboard Card Visibility State
@@ -934,38 +941,66 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
 
     fun sendTestHydrationReminder() {
         val metric = todayMetric.value
-        val curr = metric?.waterMl ?: 1600
+        val curr = metric?.waterMl ?: 0
         val goal = metric?.waterGoalMl ?: 2500
         notificationHelper.sendHydrationReminder(curr, goal)
         audioSoundManager.triggerSubtleHaptic()
     }
 
-    // Chart Data calculations
+    // Journal Entry operations
+    fun saveJournalEntry(
+        title: String,
+        content: String,
+        mood: String
+    ) {
+        viewModelScope.launch {
+            val currSteps = todayMetric.value?.steps ?: 0
+            val currWater = todayMetric.value?.waterMl ?: 0
+            repository.addJournalEntry(
+                title = title.ifBlank { "Daily Reflection" },
+                content = content,
+                mood = mood,
+                steps = currSteps,
+                waterMl = currWater
+            )
+            audioSoundManager.triggerSubtleHaptic()
+        }
+    }
+
+    fun deleteJournalEntry(id: Long) {
+        viewModelScope.launch {
+            repository.deleteJournalEntry(id)
+            audioSoundManager.triggerSubtleHaptic()
+        }
+    }
+
+    // Chart Data calculations based strictly on real database metrics
     fun getChartPoints(): List<ChartPoint> {
         val metrics = recentMetrics.value
-        val dayLabels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
-
         val metricType = _selectedMetricType.value
-        val defaultVals = when (metricType) {
-            MetricViewType.CALORIES -> listOf(410f, 440f, 486f, 510f, 540f, 710f, 620f)
-            MetricViewType.STEPS -> listOf(6800f, 7200f, 7842f, 8300f, 8900f, 11400f, 9600f)
-            MetricViewType.WATER -> listOf(1800f, 2100f, 1600f, 2200f, 2400f, 2500f, 2100f)
-        }
+        val cal = Calendar.getInstance()
+        val simpleDateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        val dayFormat = SimpleDateFormat("EEE", Locale.US)
 
-        return dayLabels.mapIndexed { idx, label ->
-            val valAtIdx = if (idx < metrics.size) {
-                when (metricType) {
-                    MetricViewType.CALORIES -> metrics[metrics.size - 1 - idx].activeCalories.toFloat()
-                    MetricViewType.STEPS -> metrics[metrics.size - 1 - idx].steps.toFloat()
-                    MetricViewType.WATER -> metrics[metrics.size - 1 - idx].waterMl.toFloat()
-                }
-            } else defaultVals.getOrElse(idx) { 450f }
-
+        val days = (6 downTo 0).map { daysAgo ->
+            val c = Calendar.getInstance()
+            c.add(Calendar.DAY_OF_YEAR, -daysAgo)
+            val dateStr = simpleDateFormat.format(c.time)
+            val label = dayFormat.format(c.time)
+            val isToday = daysAgo == 0
+            val metric = metrics.find { it.date == dateStr }
+            val value = when (metricType) {
+                MetricViewType.CALORIES -> metric?.activeCalories?.toFloat() ?: 0f
+                MetricViewType.STEPS -> metric?.steps?.toFloat() ?: 0f
+                MetricViewType.WATER -> metric?.waterMl?.toFloat() ?: 0f
+            }
             ChartPoint(
                 label = label,
-                value = valAtIdx,
-                isToday = idx == 2
+                value = value,
+                isToday = isToday
             )
         }
+
+        return days
     }
 }

@@ -67,3 +67,16 @@ data class FavoriteQuoteEntity(
     val author: String,
     val savedTimestamp: Long = System.currentTimeMillis()
 )
+
+@Entity(tableName = "journal_entries")
+data class JournalEntryEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val date: String, // "yyyy-MM-dd"
+    val timestamp: Long = System.currentTimeMillis(),
+    val title: String,
+    val content: String,
+    val mood: String = "CALM",
+    val stepCountAtEntry: Int = 0,
+    val waterMlAtEntry: Int = 0
+)
+

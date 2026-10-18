@@ -5,6 +5,7 @@ import com.example.data.local.dao.WellnessDao
 import com.example.data.local.entities.AppointmentEntity
 import com.example.data.local.entities.DailyMetricEntity
 import com.example.data.local.entities.FavoriteQuoteEntity
+import com.example.data.local.entities.JournalEntryEntity
 import com.example.data.local.entities.PaymentRecordEntity
 import com.example.data.local.entities.WaterEntryEntity
 import com.example.data.local.entities.WellnessSessionEntity
@@ -52,55 +53,21 @@ class WellnessRepository(private val dao: WellnessDao) {
         }
         val newMetric = DailyMetricEntity(
             date = today,
-            activeCalories = 486,
-            totalCalories = 2120,
-            steps = 7842,
+            activeCalories = 0,
+            totalCalories = 0,
+            steps = 0,
             stepGoal = 10000,
-            waterMl = 1600,
+            waterMl = 0,
             waterGoalMl = 2500,
-            exerciseMinutes = 42
+            exerciseMinutes = 0
         )
         dao.insertOrUpdateMetric(newMetric)
         return newMetric
     }
 
     suspend fun seedInitialDataIfEmpty() {
-        val today = getTodayDate()
-        val existingToday = dao.getDailyMetric(today)
-        if (existingToday == null) {
-            val pastDaysData = listOf(
-                Pair(410, 6800), // 6 days ago (Mon)
-                Pair(440, 7200), // 5 days ago (Tue)
-                Pair(486, 7842), // Today (Wed)
-                Pair(510, 8300), // 3 days ago
-                Pair(540, 8900), // 2 days ago
-                Pair(710, 11400),// 1 day ago (Sat peak)
-                Pair(620, 9600)  // Sun
-            )
-            for (i in 6 downTo 0) {
-                val tempCal = Calendar.getInstance()
-                tempCal.add(Calendar.DAY_OF_YEAR, -i)
-                val dStr = dateFormat.format(tempCal.time)
-                val idx = 6 - i
-                val (burn, steps) = pastDaysData[idx]
-                val metric = DailyMetricEntity(
-                    date = dStr,
-                    activeCalories = burn,
-                    totalCalories = 1700 + burn,
-                    steps = steps,
-                    stepGoal = 10000,
-                    waterMl = if (i == 0) 1600 else (1800 + (idx * 120) % 700),
-                    waterGoalMl = 2500,
-                    exerciseMinutes = 20 + idx * 5
-                )
-                dao.insertOrUpdateMetric(metric)
-            }
-
-            // Seed initial water entries for today
-            dao.insertWaterEntry(WaterEntryEntity(date = today, amountMl = 350, vessel = "Morning Glass"))
-            dao.insertWaterEntry(WaterEntryEntity(date = today, amountMl = 500, vessel = "Water Bottle"))
-            dao.insertWaterEntry(WaterEntryEntity(date = today, amountMl = 750, vessel = "Tumbler"))
-        }
+        // Ensure today's metric entry exists with clean zero-based tracking
+        getOrCreateTodayMetric()
 
         // Clean up any legacy hardcoded sample data
         dao.deleteHardcodedAppointments()
@@ -127,11 +94,11 @@ class WellnessRepository(private val dao: WellnessDao) {
         val today = getTodayDate()
         val current = dao.getDailyMetric(today) ?: getOrCreateTodayMetric()
         val newSteps = (current.steps + deltaSteps).coerceAtLeast(0)
-        val newActiveBurn = (newSteps * 0.045f).toInt() + 130
+        val newActiveBurn = (newSteps * 0.045f).toInt()
         val updated = current.copy(
             steps = newSteps,
             activeCalories = newActiveBurn,
-            totalCalories = 1650 + newActiveBurn
+            totalCalories = newActiveBurn
         )
         dao.insertOrUpdateMetric(updated)
     }
@@ -154,6 +121,32 @@ class WellnessRepository(private val dao: WellnessDao) {
     fun getAllAppointmentsFlow(): Flow<List<AppointmentEntity>> = dao.getAllAppointmentsFlow()
     fun getAllPaymentsFlow(): Flow<List<PaymentRecordEntity>> = dao.getAllPaymentsFlow()
     fun getFavoriteQuotesFlow(): Flow<List<FavoriteQuoteEntity>> = dao.getAllFavoriteQuotesFlow()
+    fun getJournalEntriesFlow(): Flow<List<JournalEntryEntity>> = dao.getAllJournalEntriesFlow()
+
+    suspend fun addJournalEntry(
+        title: String,
+        content: String,
+        mood: String,
+        steps: Int = 0,
+        waterMl: Int = 0
+    ) {
+        val today = getTodayDate()
+        dao.insertJournalEntry(
+            JournalEntryEntity(
+                date = today,
+                timestamp = System.currentTimeMillis(),
+                title = title,
+                content = content,
+                mood = mood,
+                stepCountAtEntry = steps,
+                waterMlAtEntry = waterMl
+            )
+        )
+    }
+
+    suspend fun deleteJournalEntry(id: Long) {
+        dao.deleteJournalEntry(id)
+    }
 
     suspend fun bookAppointment(appointment: AppointmentEntity, paymentMethod: String) {
         dao.insertAppointment(appointment)

@@ -7,6 +7,7 @@ import androidx.room.Query
 import com.example.data.local.entities.AppointmentEntity
 import com.example.data.local.entities.DailyMetricEntity
 import com.example.data.local.entities.FavoriteQuoteEntity
+import com.example.data.local.entities.JournalEntryEntity
 import com.example.data.local.entities.PaymentRecordEntity
 import com.example.data.local.entities.WaterEntryEntity
 import com.example.data.local.entities.WellnessSessionEntity
@@ -77,4 +78,15 @@ interface WellnessDao {
 
     @Query("DELETE FROM favorite_quotes WHERE id = :id")
     suspend fun removeFavoriteQuote(id: String)
+
+    // Journal Entries
+    @Query("SELECT * FROM journal_entries ORDER BY timestamp DESC")
+    fun getAllJournalEntriesFlow(): Flow<List<JournalEntryEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertJournalEntry(entry: JournalEntryEntity): Long
+
+    @Query("DELETE FROM journal_entries WHERE id = :id")
+    suspend fun deleteJournalEntry(id: Long)
 }
+

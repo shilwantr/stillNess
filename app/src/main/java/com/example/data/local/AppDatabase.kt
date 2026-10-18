@@ -8,6 +8,7 @@ import com.example.data.local.dao.WellnessDao
 import com.example.data.local.entities.AppointmentEntity
 import com.example.data.local.entities.DailyMetricEntity
 import com.example.data.local.entities.FavoriteQuoteEntity
+import com.example.data.local.entities.JournalEntryEntity
 import com.example.data.local.entities.PaymentRecordEntity
 import com.example.data.local.entities.WaterEntryEntity
 import com.example.data.local.entities.WellnessSessionEntity
@@ -19,9 +20,10 @@ import com.example.data.local.entities.WellnessSessionEntity
         WellnessSessionEntity::class,
         AppointmentEntity::class,
         PaymentRecordEntity::class,
-        FavoriteQuoteEntity::class
+        FavoriteQuoteEntity::class,
+        JournalEntryEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

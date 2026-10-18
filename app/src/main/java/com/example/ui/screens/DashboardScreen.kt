@@ -108,12 +108,12 @@ fun DashboardScreen(
     var showGamesDialog by remember { mutableStateOf(false) }
     var isEditMode by remember { mutableStateOf(false) }
 
-    val activeBurn = todayMetric?.activeCalories ?: 486
-    val currentSteps = todayMetric?.steps ?: 7842
+    val activeBurn = todayMetric?.activeCalories ?: 0
+    val currentSteps = todayMetric?.steps ?: 0
     val stepGoal = todayMetric?.stepGoal ?: 10000
-    val waterMl = todayMetric?.waterMl ?: 1600
+    val waterMl = todayMetric?.waterMl ?: 0
     val waterGoalMl = todayMetric?.waterGoalMl ?: 2500
-    val exerciseMins = todayMetric?.exerciseMinutes ?: 42
+    val exerciseMins = todayMetric?.exerciseMinutes ?: 0
     val upcomingCount = appointments.count { it.status == "UPCOMING" }
 
     val scrollState = rememberScrollState()
@@ -205,24 +205,6 @@ fun DashboardScreen(
                                 fontWeight = FontWeight.Medium
                             )
                         }
-                    }
-
-                    // Edit Mode Toggle Button
-                    Box(
-                        modifier = Modifier
-                            .size(38.dp)
-                            .clip(CircleShape)
-                            .background(if (isEditMode) CyanBright.copy(alpha = 0.3f) else Color.White.copy(alpha = 0.14f))
-                            .border(1.dp, FrostedGlassBorder, CircleShape)
-                            .clickable { isEditMode = !isEditMode },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Edit Dashboard",
-                            tint = Color.White.copy(alpha = 0.90f),
-                            modifier = Modifier.size(17.dp)
-                        )
                     }
                 }
             }
@@ -381,176 +363,6 @@ fun DashboardScreen(
                     onEmoClick = { viewModel.setEmoScreenOpen(true) }
                 )
             }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // ================================================================
-            // 5. Refractive Liquid Glass Overview & Telemetry Wave Card
-            // ================================================================
-            EditableCardWrapper(
-                isVisible = isTelemetryCardVisible,
-                isEditMode = isEditMode,
-                onToggle = { viewModel.toggleTelemetryCard() }
-            ) {
-                GlassCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(225.dp),
-                    cornerRadius = 28.dp,
-                    elevation = 10.dp,
-                    testTag = "card_liquid_glass_overview"
-                ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(18.dp),
-                    verticalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.BarChart,
-                                contentDescription = null,
-                                tint = CyanBright,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "Daily Energy & Balance",
-                                color = Color.White.copy(alpha = 0.92f),
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-
-                        Text(
-                            text = "Mood: ${selectedMood.label}",
-                            color = CyanBright,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(
-                                text = "$activeBurn",
-                                color = Color.White,
-                                fontSize = 36.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = (-0.8).sp
-                            )
-                            Text(
-                                text = "Active kcal",
-                                color = Color.White.copy(alpha = 0.72f),
-                                fontSize = 12.sp
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "$exerciseMins min active",
-                                color = CyanBright,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            Text(
-                                text = "${(currentSteps * 100 / stepGoal.coerceAtLeast(1))}% step goal",
-                                color = Color.White.copy(alpha = 0.55f),
-                                fontSize = 10.sp
-                            )
-                        }
-
-                        val points = viewModel.getChartPoints()
-                        InteractiveWaveGraph(
-                            points = points,
-                            selectedIndex = selectedIndex,
-                            onSelectIndex = { viewModel.selectGraphIndex(it) },
-                            unit = "kcal",
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(115.dp)
-                                .padding(start = 12.dp)
-                        )
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "%,d steps • %.1f L water".format(currentSteps, waterMl / 1000f),
-                            color = Color.White.copy(alpha = 0.70f),
-                            fontSize = 11.sp
-                        )
-
-                        Box(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(CircleShape)
-                                .background(Color.White.copy(alpha = 0.16f))
-                                .border(0.9.dp, FrostedGlassBorder, CircleShape)
-                                .clickable { viewModel.setTab(StillTab.TRENDS) },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.TrendingUp,
-                                contentDescription = "View Journal Trends",
-                                tint = Color.White,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-                }
-            }
-            } // End EditableCardWrapper for Telemetry Wave Card
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // ================================================================
-            // 6. Split Minimal Liquid Glass Tiles: Therapy Sessions & Daily Goals
-            // ================================================================
-            EditableCardWrapper(
-                isVisible = isTilesCardVisible,
-                isEditMode = isEditMode,
-                onToggle = { viewModel.toggleTilesCard() }
-            ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                GlassTile(
-                    title = "Therapy",
-                    subtitle = "$upcomingCount upcoming",
-                    icon = Icons.Default.ChatBubbleOutline,
-                    iconTint = CyanBright,
-                    onClick = { viewModel.setTab(StillTab.THERAPISTS) },
-                    modifier = Modifier.weight(1f)
-                )
-
-                val goalsDone = listOf(
-                    currentSteps >= stepGoal,
-                    waterMl >= waterGoalMl,
-                    completedSessions.isNotEmpty()
-                ).count { it }
-
-                GlassTile(
-                    title = "Daily Goals",
-                    subtitle = "$goalsDone of 3 complete",
-                    icon = Icons.Default.CheckCircleOutline,
-                    iconTint = VioletBright,
-                    onClick = { showTaskDialog = true },
-                    modifier = Modifier.weight(1f)
-                )
-            }
-            } // End EditableCardWrapper for Tiles
 
             Spacer(modifier = Modifier.height(16.dp))
 
