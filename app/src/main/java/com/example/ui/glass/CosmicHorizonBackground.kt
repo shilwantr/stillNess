@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -34,26 +35,45 @@ import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.sin
 
-import androidx.compose.runtime.staticCompositionLocalOf
-
-// Ambient Theme choices for the Living Liquid Glass backdrop.
+// Comprehensive Ambient Theme choices for the Living Liquid Glass backdrop.
 // Optimized for low-end CPU and GPU devices:
 // 1. Single master infinite transition float per canvas minimizes animation state evaluations.
 // 2. Zero per-frame Path or collection allocations inside DrawScope.
 // 3. Zero hardware clipPath calls (triangle hatching is analytically interpolated along edges).
-// 4. Every theme features 3 automatic time-of-day variants (Morning, Afternoon, Night).
-// 5. Zero pure-white background elements so foreground white text remains 100% legible.
+// 4. Time-of-day adaptations (Morning, Afternoon, Night).
+// 5. High contrast between foreground typography and background canvas.
 enum class AmbientTheme(val label: String, val subtitle: String) {
+    // Core Dark Sanctuary Themes
     AURORA_SILK("NT", "Olive Twilight: Deep obsidian olive, moss sage & muted earth silk"),
+    MIDNIGHT_SAGE("MS", "Midnight Sage: Deep forest slate, eucalyptus & warm sand sanctuary"),
+    COSMIC_DUSK("CD", "Cosmic Dusk: Deep violet, plum purple & warm amber horizon"),
+    OCEAN_ABYSS("OA", "Ocean Abyss: Rising dawn horizon, deep cyan & navy depths"),
+    FOREST_RAIN("FR", "Forest Rain: Misty canopy lake, gentle rain streaks & rippling water"),
+    BIOLUMINESCENT_WAKE("BW", "Bioluminescent Wake: Minimalist boat with glowing cyan-blue Kelvin wake"),
     FERRIS_WHEEL("FW", "Celestial Bubbles: Rising liquid glass bubbles with sun, moon & 2D clouds"),
     TIME_DYNAMIC("TD", "Time Dynamic: Adaptive morning, afternoon & evening fluted glass waves"),
     LOOPING_TRIOS("LT", "Looping Trios: Pure black high-contrast kinetic geometry"),
     RESONANCE_TUNNEL("RT", "Resonance Tunnel: Hypnotic infinite ribbed obsidian vortex"),
-    CLEAN_WHITE("CW", "Clean White: Minimalist soft porcelain white with dark olive accents")
+
+    // Light Sanctuary Themes (isLight = true)
+    CLEAN_WHITE("CW", "Clean White: Minimalist soft porcelain white with dark olive accents"),
+    WARM_LINEN("WL", "Warm Linen & Olive: Soft sunlit linen, olive grove & muted terracotta"),
+    LIGHT_TOPOGRAPHY("TP", "Liquid Topography: Organic marble contour ribbons in soft stone & sage"),
+    LIGHT_ZEN_RIPPLES("ZR", "Zen Sand Ripples: Interlocking concentric Seigaiha wave medallions"),
+    LIGHT_HALFTONE_WAVE("HW", "Halftone Silk Wave: 3D undulating dot-matrix topography"),
+    LIGHT_QUILTED_LATTICE("QL", "Quilted Lattice: Soft 3D embossed architectural diamond tiles")
 }
 
 val AmbientTheme.isLight: Boolean
-    get() = this == AmbientTheme.CLEAN_WHITE
+    get() = when (this) {
+        AmbientTheme.CLEAN_WHITE,
+        AmbientTheme.WARM_LINEN,
+        AmbientTheme.LIGHT_TOPOGRAPHY,
+        AmbientTheme.LIGHT_ZEN_RIPPLES,
+        AmbientTheme.LIGHT_HALFTONE_WAVE,
+        AmbientTheme.LIGHT_QUILTED_LATTICE -> true
+        else -> false
+    }
 
 val LocalAmbientTheme = staticCompositionLocalOf { AmbientTheme.AURORA_SILK }
 
@@ -66,7 +86,7 @@ val AmbientTheme.secondaryTextColor: Color
 val AmbientTheme.tertiaryTextColor: Color
     get() = if (isLight) Color(0xFF5B7260) else Color.White.copy(alpha = 0.52f)
 
-// Three distinct time-of-day periods applied across all themes.
+// Three distinct time-of-day periods applied across themes.
 enum class TimePeriod {
     MORNING,   // 05:00 .. 11:59
     AFTERNOON, // 12:00 .. 17:59
@@ -91,7 +111,7 @@ private val MOTE_X = floatArrayOf(0.14f, 0.84f, 0.70f, 0.26f, 0.90f, 0.10f, 0.48
 private val MOTE_Y = floatArrayOf(0.12f, 0.10f, 0.24f, 0.30f, 0.38f, 0.44f, 0.50f, 0.58f, 0.66f, 0.72f, 0.80f, 0.88f)
 private val MOTE_R = floatArrayOf(2.0f, 2.5f, 1.8f, 1.6f, 2.3f, 1.9f, 1.7f, 2.2f, 2.0f, 1.5f, 2.4f, 2.1f)
 
-// Pre-allocated rising liquid bubble seeds for the FERRIS_WHEEL (Celestial Bubbles) theme
+// Pre-allocated rising liquid bubble seeds for FERRIS_WHEEL
 private val BUBBLE_X = floatArrayOf(
     0.10f, 0.24f, 0.38f, 0.52f, 0.67f, 0.82f, 0.91f,
     0.16f, 0.31f, 0.46f, 0.60f, 0.75f, 0.87f, 0.42f
@@ -108,6 +128,11 @@ private val BUBBLE_SPEED_MULT = intArrayOf(
     1, 1, 2, 1, 2, 1, 2,
     1, 2, 1, 2, 1, 2, 3
 )
+
+// Pre-allocated medallion centers for LIGHT_ZEN_RIPPLES
+private val ZEN_DISC_X = floatArrayOf(0.18f, 0.82f, 0.50f, 0.12f, 0.88f, 0.46f, 0.20f, 0.84f, 0.52f, 0.15f, 0.78f)
+private val ZEN_DISC_Y = floatArrayOf(0.08f, 0.12f, 0.22f, 0.36f, 0.40f, 0.50f, 0.64f, 0.68f, 0.78f, 0.92f, 0.94f)
+private val ZEN_DISC_SCALE = floatArrayOf(0.46f, 0.44f, 0.50f, 0.45f, 0.46f, 0.52f, 0.46f, 0.44f, 0.50f, 0.45f, 0.46f)
 
 @Composable
 fun CosmicHorizonCanvas(
@@ -149,6 +174,12 @@ fun CosmicHorizonCanvas(
 
         when (theme) {
             AmbientTheme.AURORA_SILK -> drawNordicTwilight(w, h, p1, p2, pulse, period, sharedPath)
+            AmbientTheme.MIDNIGHT_SAGE -> drawMidnightSage(w, h, p1, p2, pulse, period, sharedPath)
+            AmbientTheme.WARM_LINEN -> drawWarmLinen(w, h, p1, p2, pulse, period, sharedPath)
+            AmbientTheme.COSMIC_DUSK -> drawCosmicDusk(w, h, p1, p2, pulse, period, sharedPath)
+            AmbientTheme.OCEAN_ABYSS -> drawOceanAbyss(w, h, p1, p2, pulse, period, sharedPath)
+            AmbientTheme.FOREST_RAIN -> drawForestRain(w, h, p1, p2, pulse, sharedPath)
+            AmbientTheme.BIOLUMINESCENT_WAKE -> drawBioluminescentWake(w, h, p1, p2, pulse, sharedPath)
             AmbientTheme.FERRIS_WHEEL -> drawFerrisWheel(w, h, p1, p2, pulse, period, sharedPath)
             AmbientTheme.TIME_DYNAMIC -> drawTimeDynamic(
                 w = w,
@@ -162,21 +193,29 @@ fun CosmicHorizonCanvas(
                 secondaryArcY = secondaryArcY
             )
             AmbientTheme.RESONANCE_TUNNEL -> drawResonanceTunnel(w, h, p1, pulse, period, sharedPath)
-            AmbientTheme.CLEAN_WHITE -> drawCleanWhite(w, h, p1, pulse, sharedPath)
+            AmbientTheme.CLEAN_WHITE -> drawCleanWhite(w, h, p1, pulse, sharedPath, period)
+            AmbientTheme.LIGHT_TOPOGRAPHY -> drawLightTopography(w, h, p1, p2, pulse, period, sharedPath)
+            AmbientTheme.LIGHT_ZEN_RIPPLES -> drawLightZenRipples(w, h, p1, p2, period)
+            AmbientTheme.LIGHT_HALFTONE_WAVE -> drawLightHalftoneWave(w, h, p1, p2, period)
+            AmbientTheme.LIGHT_QUILTED_LATTICE -> drawLightQuiltedLattice(w, h, p1, period, sharedPath)
             AmbientTheme.LOOPING_TRIOS -> Unit
         }
 
-        if (theme != AmbientTheme.LOOPING_TRIOS &&
-            theme != AmbientTheme.FERRIS_WHEEL &&
-            theme != AmbientTheme.RESONANCE_TUNNEL &&
-            theme != AmbientTheme.CLEAN_WHITE
+        if (theme == AmbientTheme.AURORA_SILK ||
+            theme == AmbientTheme.MIDNIGHT_SAGE ||
+            theme == AmbientTheme.COSMIC_DUSK ||
+            theme == AmbientTheme.OCEAN_ABYSS ||
+            theme == AmbientTheme.TIME_DYNAMIC
         ) {
             drawFloatingLightMotes(w, h, p1, p2, period)
         }
     }
 }
 
-// Pre-allocated palette structure for the Dark Olive Sanctuary (NT / AURORA_SILK) scenes.
+// ============================================================================
+// SILK AURORA ENGINE (Shared by NT, MS, WL, CD, OA)
+// ============================================================================
+
 private class SilkAuroraPalette(
     val backdropColors: List<Color>,
     val upperOrbCore: Color,
@@ -189,87 +228,69 @@ private class SilkAuroraPalette(
 )
 
 private val NT_MORNING_PALETTE = SilkAuroraPalette(
-    backdropColors = listOf(
-        Color(0xFF040705),
-        Color(0xFF0A110C),
-        Color(0xFF060A07)
-    ),
+    backdropColors = listOf(Color(0xFF040705), Color(0xFF0A110C), Color(0xFF060A07)),
     upperOrbCore = Color(0xFF3F523A).copy(alpha = 0.26f),
     upperOrbEdge = Color(0xFF3F523A).copy(alpha = 0.08f),
     lowerOrbCore = Color(0xFF5E4636).copy(alpha = 0.22f),
     lowerOrbEdge = Color(0xFF5E4636).copy(alpha = 0.07f),
-    primaryWaveColors = listOf(
-        Color(0xFF233024).copy(alpha = 0.46f),
-        Color(0xFF384A35).copy(alpha = 0.40f),
-        Color(0xFF523F31).copy(alpha = 0.32f)
-    ),
-    secondaryWaveColors = listOf(
-        Color(0xFF19241B).copy(alpha = 0.44f),
-        Color(0xFF31402F).copy(alpha = 0.32f)
-    ),
-    crestColors = listOf(
-        Color.Transparent,
-        Color(0xFF5B6E53).copy(alpha = 0.28f),
-        Color(0xFF6E8264).copy(alpha = 0.42f),
-        Color(0xFF5B6E53).copy(alpha = 0.28f),
-        Color.Transparent
-    )
+    primaryWaveColors = listOf(Color(0xFF233024).copy(alpha = 0.46f), Color(0xFF384A35).copy(alpha = 0.40f), Color(0xFF523F31).copy(alpha = 0.32f)),
+    secondaryWaveColors = listOf(Color(0xFF19241B).copy(alpha = 0.44f), Color(0xFF31402F).copy(alpha = 0.32f)),
+    crestColors = listOf(Color.Transparent, Color(0xFF5B6E53).copy(alpha = 0.28f), Color(0xFF6E8264).copy(alpha = 0.42f), Color(0xFF5B6E53).copy(alpha = 0.28f), Color.Transparent)
 )
 
 private val NT_AFTERNOON_PALETTE = SilkAuroraPalette(
-    backdropColors = listOf(
-        Color(0xFF050704),
-        Color(0xFF0C1209),
-        Color(0xFF070A05)
-    ),
+    backdropColors = listOf(Color(0xFF050704), Color(0xFF0C1209), Color(0xFF070A05)),
     upperOrbCore = Color(0xFF4B5735).copy(alpha = 0.26f),
     upperOrbEdge = Color(0xFF4B5735).copy(alpha = 0.08f),
     lowerOrbCore = Color(0xFF5E4F2D).copy(alpha = 0.23f),
     lowerOrbEdge = Color(0xFF5E4F2D).copy(alpha = 0.07f),
-    primaryWaveColors = listOf(
-        Color(0xFF28321E).copy(alpha = 0.46f),
-        Color(0xFF3E4A2D).copy(alpha = 0.40f),
-        Color(0xFF574829).copy(alpha = 0.32f)
-    ),
-    secondaryWaveColors = listOf(
-        Color(0xFF1E2617).copy(alpha = 0.44f),
-        Color(0xFF3A442B).copy(alpha = 0.32f)
-    ),
-    crestColors = listOf(
-        Color.Transparent,
-        Color(0xFF6B7348).copy(alpha = 0.28f),
-        Color(0xFF7D8556).copy(alpha = 0.42f),
-        Color(0xFF6B7348).copy(alpha = 0.28f),
-        Color.Transparent
-    )
+    primaryWaveColors = listOf(Color(0xFF28321E).copy(alpha = 0.46f), Color(0xFF3E4A2D).copy(alpha = 0.40f), Color(0xFF574829).copy(alpha = 0.32f)),
+    secondaryWaveColors = listOf(Color(0xFF1E2617).copy(alpha = 0.44f), Color(0xFF3A442B).copy(alpha = 0.32f)),
+    crestColors = listOf(Color.Transparent, Color(0xFF6B7348).copy(alpha = 0.28f), Color(0xFF7D8556).copy(alpha = 0.42f), Color(0xFF6B7348).copy(alpha = 0.28f), Color.Transparent)
 )
 
 private val NT_NIGHT_PALETTE = SilkAuroraPalette(
-    backdropColors = listOf(
-        Color(0xFF030504),
-        Color(0xFF080F0C),
-        Color(0xFF040705)
-    ),
+    backdropColors = listOf(Color(0xFF030504), Color(0xFF080F0C), Color(0xFF040705)),
     upperOrbCore = Color(0xFF2D3E33).copy(alpha = 0.26f),
     upperOrbEdge = Color(0xFF2D3E33).copy(alpha = 0.08f),
     lowerOrbCore = Color(0xFF223336).copy(alpha = 0.22f),
     lowerOrbEdge = Color(0xFF223336).copy(alpha = 0.07f),
-    primaryWaveColors = listOf(
-        Color(0xFF16241C).copy(alpha = 0.48f),
-        Color(0xFF25382C).copy(alpha = 0.42f),
-        Color(0xFF1F2E34).copy(alpha = 0.34f)
-    ),
-    secondaryWaveColors = listOf(
-        Color(0xFF111C16).copy(alpha = 0.45f),
-        Color(0xFF24342B).copy(alpha = 0.34f)
-    ),
-    crestColors = listOf(
-        Color.Transparent,
-        Color(0xFF43594C).copy(alpha = 0.28f),
-        Color(0xFF526B5C).copy(alpha = 0.42f),
-        Color(0xFF43594C).copy(alpha = 0.28f),
-        Color.Transparent
-    )
+    primaryWaveColors = listOf(Color(0xFF16241C).copy(alpha = 0.48f), Color(0xFF25382C).copy(alpha = 0.42f), Color(0xFF1F2E34).copy(alpha = 0.34f)),
+    secondaryWaveColors = listOf(Color(0xFF111C16).copy(alpha = 0.45f), Color(0xFF24342B).copy(alpha = 0.34f)),
+    crestColors = listOf(Color.Transparent, Color(0xFF43594C).copy(alpha = 0.28f), Color(0xFF526B5C).copy(alpha = 0.42f), Color(0xFF43594C).copy(alpha = 0.28f), Color.Transparent)
+)
+
+private val MS_PALETTE = SilkAuroraPalette(
+    backdropColors = listOf(Color(0xFF091210), Color(0xFF0F1B17), Color(0xFF0B1412)),
+    upperOrbCore = Color(0xFF8FA89B).copy(alpha = 0.26f),
+    upperOrbEdge = Color(0xFF8FA89B).copy(alpha = 0.08f),
+    lowerOrbCore = Color(0xFFC7A88D).copy(alpha = 0.22f),
+    lowerOrbEdge = Color(0xFFC7A88D).copy(alpha = 0.07f),
+    primaryWaveColors = listOf(Color(0xFF243831).copy(alpha = 0.46f), Color(0xFF3D574E).copy(alpha = 0.40f), Color(0xFF5C4F42).copy(alpha = 0.32f)),
+    secondaryWaveColors = listOf(Color(0xFF1B2B25).copy(alpha = 0.44f), Color(0xFF334A42).copy(alpha = 0.32f)),
+    crestColors = listOf(Color.Transparent, Color(0xFFA3C1AD).copy(alpha = 0.30f), Color(0xFFD4B499).copy(alpha = 0.35f), Color(0xFFA3C1AD).copy(alpha = 0.30f), Color.Transparent)
+)
+
+private val CD_PALETTE = SilkAuroraPalette(
+    backdropColors = listOf(Color(0xFF0A0714), Color(0xFF150D26), Color(0xFF0D0818)),
+    upperOrbCore = Color(0xFF9333EA).copy(alpha = 0.24f),
+    upperOrbEdge = Color(0xFF9333EA).copy(alpha = 0.07f),
+    lowerOrbCore = Color(0xFFEA580C).copy(alpha = 0.22f),
+    lowerOrbEdge = Color(0xFFEA580C).copy(alpha = 0.06f),
+    primaryWaveColors = listOf(Color(0xFF2E1065).copy(alpha = 0.45f), Color(0xFF581C87).copy(alpha = 0.40f), Color(0xFF7C2D12).copy(alpha = 0.32f)),
+    secondaryWaveColors = listOf(Color(0xFF3B0764).copy(alpha = 0.42f), Color(0xFF6B21A8).copy(alpha = 0.32f)),
+    crestColors = listOf(Color.Transparent, Color(0xFFC084FC).copy(alpha = 0.32f), Color(0xFFFB923C).copy(alpha = 0.35f), Color(0xFFC084FC).copy(alpha = 0.32f), Color.Transparent)
+)
+
+private val OA_PALETTE = SilkAuroraPalette(
+    backdropColors = listOf(Color(0xFF050B14), Color(0xFF0A1526), Color(0xFF070F1A)),
+    upperOrbCore = Color(0xFF0284C7).copy(alpha = 0.25f),
+    upperOrbEdge = Color(0xFF0284C7).copy(alpha = 0.07f),
+    lowerOrbCore = Color(0xFF059669).copy(alpha = 0.22f),
+    lowerOrbEdge = Color(0xFF059669).copy(alpha = 0.07f),
+    primaryWaveColors = listOf(Color(0xFF082F49).copy(alpha = 0.46f), Color(0xFF0369A1).copy(alpha = 0.40f), Color(0xFF065F46).copy(alpha = 0.32f)),
+    secondaryWaveColors = listOf(Color(0xFF0C4A6E).copy(alpha = 0.42f), Color(0xFF0284C7).copy(alpha = 0.30f)),
+    crestColors = listOf(Color.Transparent, Color(0xFF38BDF8).copy(alpha = 0.32f), Color(0xFF34D399).copy(alpha = 0.35f), Color(0xFF38BDF8).copy(alpha = 0.32f), Color.Transparent)
 )
 
 private fun DrawScope.drawLiquidSilkScene(
@@ -281,14 +302,9 @@ private fun DrawScope.drawLiquidSilkScene(
     palette: SilkAuroraPalette,
     sharedPath: Path
 ) {
-    drawRect(
-        brush = Brush.verticalGradient(colors = palette.backdropColors)
-    )
+    drawRect(brush = Brush.verticalGradient(colors = palette.backdropColors))
 
-    val orb1Center = Offset(
-        x = w * (0.26f + 0.14f * sin(p1)),
-        y = h * (0.22f + 0.08f * cos(p2))
-    )
+    val orb1Center = Offset(w * (0.26f + 0.14f * sin(p1)), h * (0.22f + 0.08f * cos(p2)))
     drawCircle(
         brush = Brush.radialGradient(
             colors = listOf(palette.upperOrbCore, palette.upperOrbEdge, Color.Transparent),
@@ -299,10 +315,7 @@ private fun DrawScope.drawLiquidSilkScene(
         radius = w * (0.76f * pulse)
     )
 
-    val orb2Center = Offset(
-        x = w * (0.74f - 0.14f * cos(p1)),
-        y = h * (0.68f + 0.09f * sin(p2))
-    )
+    val orb2Center = Offset(w * (0.74f - 0.14f * cos(p1)), h * (0.68f + 0.09f * sin(p2)))
     drawCircle(
         brush = Brush.radialGradient(
             colors = listOf(palette.lowerOrbCore, palette.lowerOrbEdge, Color.Transparent),
@@ -431,20 +444,10 @@ private fun DrawScope.drawMidnightSage(
     p1: Float,
     p2: Float,
     pulse: Float,
+    period: TimePeriod = TimePeriod.current(),
     sharedPath: Path = Path()
 ) {
-    drawNordicTwilight(w, h, p1, p2, pulse, TimePeriod.MORNING, sharedPath)
-}
-
-private fun DrawScope.drawWarmLinen(
-    w: Float,
-    h: Float,
-    p1: Float,
-    p2: Float,
-    pulse: Float,
-    sharedPath: Path = Path()
-) {
-    drawNordicTwilight(w, h, p1, p2, pulse, TimePeriod.AFTERNOON, sharedPath)
+    drawLiquidSilkScene(w, h, p1, p2, pulse, MS_PALETTE, sharedPath)
 }
 
 private fun DrawScope.drawCosmicDusk(
@@ -453,9 +456,10 @@ private fun DrawScope.drawCosmicDusk(
     p1: Float,
     p2: Float,
     pulse: Float,
+    period: TimePeriod = TimePeriod.current(),
     sharedPath: Path = Path()
 ) {
-    drawNordicTwilight(w, h, p1, p2, pulse, TimePeriod.NIGHT, sharedPath)
+    drawLiquidSilkScene(w, h, p1, p2, pulse, CD_PALETTE, sharedPath)
 }
 
 private fun DrawScope.drawOceanAbyss(
@@ -464,9 +468,129 @@ private fun DrawScope.drawOceanAbyss(
     p1: Float,
     p2: Float,
     pulse: Float,
+    period: TimePeriod = TimePeriod.current(),
     sharedPath: Path = Path()
 ) {
-    drawNordicTwilight(w, h, p1, p2, pulse, TimePeriod.NIGHT, sharedPath)
+    drawLiquidSilkScene(w, h, p1, p2, pulse, OA_PALETTE, sharedPath)
+}
+
+private fun DrawScope.drawWarmLinen(
+    w: Float,
+    h: Float,
+    p1: Float,
+    p2: Float,
+    pulse: Float,
+    period: TimePeriod = TimePeriod.current(),
+    sharedPath: Path = Path()
+) {
+    drawLightTopography(w, h, p1, p2, pulse, period, sharedPath)
+}
+
+// Forest Rain Theme (FR) - Continuous rain streaks & mist with zero allocations
+private fun DrawScope.drawForestRain(
+    w: Float,
+    h: Float,
+    p1: Float,
+    p2: Float,
+    pulse: Float,
+    sharedPath: Path
+) {
+    drawRect(
+        brush = Brush.verticalGradient(
+            colors = listOf(Color(0xFF090E0C), Color(0xFF141F1A), Color(0xFF0C1310))
+        )
+    )
+
+    val fogCenter = Offset(w * (0.42f + 0.10f * sin(p1)), h * (0.34f + 0.05f * cos(p2)))
+    drawCircle(
+        brush = Brush.radialGradient(
+            colors = listOf(Color(0xFF42574C).copy(alpha = 0.22f * pulse), Color.Transparent),
+            center = fogCenter,
+            radius = w * 0.85f
+        ),
+        center = fogCenter,
+        radius = w * 0.85f
+    )
+
+    val normPhase = p1 / TWO_PI
+    val numDrops = 16
+    for (i in 0 until numDrops) {
+        val startX = (w * 0.062f * i + w * 0.28f * (i % 3)) % w
+        val speed = 1 + (i % 3)
+        val rawY = (normPhase * speed + (i * 0.17f)) % 1f
+        val dropY = h * rawY
+        val streakLength = h * 0.055f
+
+        drawLine(
+            brush = Brush.verticalGradient(
+                colors = listOf(Color.Transparent, Color(0xFF8BA698).copy(alpha = 0.22f)),
+                startY = dropY,
+                endY = dropY + streakLength
+            ),
+            start = Offset(startX, dropY),
+            end = Offset(startX, dropY + streakLength),
+            strokeWidth = 1.4f,
+            cap = StrokeCap.Round
+        )
+    }
+}
+
+// Bioluminescent Wake Theme (BW) - Smooth Kelvin wake trails with zero allocations
+private fun DrawScope.drawBioluminescentWake(
+    w: Float,
+    h: Float,
+    p1: Float,
+    p2: Float,
+    pulse: Float,
+    sharedPath: Path
+) {
+    drawRect(Color(0xFF020408))
+
+    val centerX = w * 0.5f
+    val boatY = h * 0.22f
+    val boatWidth = w * 0.048f
+    val boatHeight = h * 0.075f
+
+    val wakeLength = h * 0.72f
+    val wakeMaxSpread = w * 0.36f
+    val trailCount = 10
+
+    for (i in 0 until trailCount) {
+        val phaseOffset = p1 + i * 0.55f
+        val side = if (i % 2 == 0) 1f else -1f
+        val spreadFactor = (i / trailCount.toFloat()) * wakeMaxSpread * side
+
+        val ctrl1X = centerX + spreadFactor * 0.3f + sin(phaseOffset) * (w * 0.02f)
+        val ctrl1Y = boatY + wakeLength * 0.3f
+        val ctrl2X = centerX + spreadFactor * 0.7f + cos(p2 + i * 0.6f) * (w * 0.025f)
+        val ctrl2Y = boatY + wakeLength * 0.7f
+        val endX = centerX + spreadFactor
+        val endY = boatY + wakeLength
+
+        sharedPath.reset()
+        sharedPath.moveTo(centerX, boatY + boatHeight * 0.7f)
+        sharedPath.cubicTo(ctrl1X, ctrl1Y, ctrl2X, ctrl2Y, endX, endY)
+
+        val trailAlpha = (0.42f - (i / trailCount.toFloat()) * 0.28f) * pulse
+        drawPath(
+            path = sharedPath,
+            brush = Brush.verticalGradient(
+                colors = listOf(Color(0xFF80D8FF).copy(alpha = trailAlpha), Color(0xFF0052CC).copy(alpha = trailAlpha * 0.4f), Color.Transparent),
+                startY = boatY,
+                endY = boatY + wakeLength
+            ),
+            style = Stroke(width = w * 0.008f, cap = StrokeCap.Round)
+        )
+    }
+
+    // Minimal boat hull
+    sharedPath.reset()
+    sharedPath.moveTo(centerX, boatY)
+    sharedPath.quadraticTo(centerX + boatWidth * 0.5f, boatY + boatHeight * 0.4f, centerX + boatWidth * 0.5f, boatY + boatHeight * 0.85f)
+    sharedPath.lineTo(centerX - boatWidth * 0.5f, boatY + boatHeight * 0.85f)
+    sharedPath.quadraticTo(centerX - boatWidth * 0.5f, boatY + boatHeight * 0.4f, centerX, boatY)
+    sharedPath.close()
+    drawPath(path = sharedPath, color = Color(0xFFCBD5E1))
 }
 
 private fun DrawScope.drawFloatingLightMotes(
@@ -498,6 +622,10 @@ private fun DrawScope.drawFloatingLightMotes(
         )
     }
 }
+
+// ============================================================================
+// CELESTIAL BUBBLES THEME (FW / FERRIS_WHEEL)
+// ============================================================================
 
 private fun DrawScope.drawFerrisWheel(
     w: Float,
@@ -550,9 +678,7 @@ private fun DrawScope.drawFerrisWheel(
         }
     }
 
-    drawRect(
-        brush = Brush.verticalGradient(colors = listOf(skyTop, skyMid, skyBottom))
-    )
+    drawRect(brush = Brush.verticalGradient(colors = listOf(skyTop, skyMid, skyBottom)))
 
     val celestialCenter = Offset(w * 0.80f, h * 0.13f)
     val celestialRadius = w * 0.075f
@@ -561,11 +687,7 @@ private fun DrawScope.drawFerrisWheel(
         TimePeriod.MORNING -> {
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(
-                        Color(0xFFE11D48).copy(alpha = 0.28f * pulse),
-                        Color(0xFF881337).copy(alpha = 0.10f),
-                        Color.Transparent
-                    ),
+                    colors = listOf(Color(0xFFE11D48).copy(alpha = 0.28f * pulse), Color(0xFF881337).copy(alpha = 0.10f), Color.Transparent),
                     center = celestialCenter,
                     radius = celestialRadius * 3.4f
                 ),
@@ -574,10 +696,7 @@ private fun DrawScope.drawFerrisWheel(
             )
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(
-                        Color(0xFFF43F5E).copy(alpha = 0.88f),
-                        Color(0xFFBE123C).copy(alpha = 0.92f)
-                    ),
+                    colors = listOf(Color(0xFFF43F5E).copy(alpha = 0.88f), Color(0xFFBE123C).copy(alpha = 0.92f)),
                     center = celestialCenter,
                     radius = celestialRadius
                 ),
@@ -588,11 +707,7 @@ private fun DrawScope.drawFerrisWheel(
         TimePeriod.AFTERNOON -> {
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(
-                        Color(0xFFEAB308).copy(alpha = 0.26f * pulse),
-                        Color(0xFF854D0E).copy(alpha = 0.10f),
-                        Color.Transparent
-                    ),
+                    colors = listOf(Color(0xFFEAB308).copy(alpha = 0.26f * pulse), Color(0xFF854D0E).copy(alpha = 0.10f), Color.Transparent),
                     center = celestialCenter,
                     radius = celestialRadius * 3.4f
                 ),
@@ -601,10 +716,7 @@ private fun DrawScope.drawFerrisWheel(
             )
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(
-                        Color(0xFFFDE047).copy(alpha = 0.86f),
-                        Color(0xFFCA8A04).copy(alpha = 0.90f)
-                    ),
+                    colors = listOf(Color(0xFFFDE047).copy(alpha = 0.86f), Color(0xFFCA8A04).copy(alpha = 0.90f)),
                     center = celestialCenter,
                     radius = celestialRadius
                 ),
@@ -615,37 +727,17 @@ private fun DrawScope.drawFerrisWheel(
         TimePeriod.NIGHT -> {
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(
-                        Color(0xFF94A3B8).copy(alpha = 0.20f * pulse),
-                        Color(0xFF334155).copy(alpha = 0.07f),
-                        Color.Transparent
-                    ),
+                    colors = listOf(Color(0xFF94A3B8).copy(alpha = 0.20f * pulse), Color(0xFF334155).copy(alpha = 0.07f), Color.Transparent),
                     center = celestialCenter,
                     radius = celestialRadius * 3.2f
                 ),
                 center = celestialCenter,
                 radius = celestialRadius * 3.2f
             )
-            drawCircle(
-                color = Color(0xFFD4D8E0),
-                radius = celestialRadius,
-                center = celestialCenter
-            )
-            drawCircle(
-                color = Color(0xFFA8B0BC).copy(alpha = 0.55f),
-                radius = celestialRadius * 0.25f,
-                center = Offset(celestialCenter.x - celestialRadius * 0.35f, celestialCenter.y + celestialRadius * 0.22f)
-            )
-            drawCircle(
-                color = Color(0xFFA8B0BC).copy(alpha = 0.45f),
-                radius = celestialRadius * 0.34f,
-                center = Offset(celestialCenter.x + celestialRadius * 0.22f, celestialCenter.y - celestialRadius * 0.16f)
-            )
-            drawCircle(
-                color = Color(0xFFA8B0BC).copy(alpha = 0.60f),
-                radius = celestialRadius * 0.16f,
-                center = Offset(celestialCenter.x + celestialRadius * 0.10f, celestialCenter.y + celestialRadius * 0.44f)
-            )
+            drawCircle(color = Color(0xFFD4D8E0), radius = celestialRadius, center = celestialCenter)
+            drawCircle(color = Color(0xFFA8B0BC).copy(alpha = 0.55f), radius = celestialRadius * 0.25f, center = Offset(celestialCenter.x - celestialRadius * 0.35f, celestialCenter.y + celestialRadius * 0.22f))
+            drawCircle(color = Color(0xFFA8B0BC).copy(alpha = 0.45f), radius = celestialRadius * 0.34f, center = Offset(celestialCenter.x + celestialRadius * 0.22f, celestialCenter.y - celestialRadius * 0.16f))
+            drawCircle(color = Color(0xFFA8B0BC).copy(alpha = 0.60f), radius = celestialRadius * 0.16f, center = Offset(celestialCenter.x + celestialRadius * 0.10f, celestialCenter.y + celestialRadius * 0.44f))
         }
     }
 
@@ -653,73 +745,32 @@ private fun DrawScope.drawFerrisWheel(
     val cloudDrift2 = cos(p1) * (w * 0.055f)
     val cloudDrift3 = sin(p2) * (w * 0.035f)
 
-    draw2DCloud(
-        cx = w * 0.68f + cloudDrift1,
-        cy = h * 0.16f,
-        cloudW = w * 0.26f,
-        cloudH = h * 0.038f,
-        bodyColor = cloudBodyColor.copy(alpha = 0.78f),
-        rimColor = cloudRimColor.copy(alpha = 0.55f),
-        sharedPath = sharedPath
-    )
-    draw2DCloud(
-        cx = w * 0.26f + cloudDrift2,
-        cy = h * 0.11f,
-        cloudW = w * 0.30f,
-        cloudH = h * 0.042f,
-        bodyColor = cloudBodyColor.copy(alpha = 0.70f),
-        rimColor = cloudRimColor.copy(alpha = 0.48f),
-        sharedPath = sharedPath
-    )
-    draw2DCloud(
-        cx = w * 0.84f + cloudDrift3,
-        cy = h * 0.24f,
-        cloudW = w * 0.22f,
-        cloudH = h * 0.032f,
-        bodyColor = cloudBodyColor.copy(alpha = 0.62f),
-        rimColor = cloudRimColor.copy(alpha = 0.42f),
-        sharedPath = sharedPath
-    )
+    draw2DCloud(w * 0.68f + cloudDrift1, h * 0.16f, w * 0.26f, h * 0.038f, cloudBodyColor.copy(alpha = 0.78f), cloudRimColor.copy(alpha = 0.55f), sharedPath)
+    draw2DCloud(w * 0.26f + cloudDrift2, h * 0.11f, w * 0.30f, h * 0.042f, cloudBodyColor.copy(alpha = 0.70f), cloudRimColor.copy(alpha = 0.48f), sharedPath)
+    draw2DCloud(w * 0.84f + cloudDrift3, h * 0.24f, w * 0.22f, h * 0.032f, cloudBodyColor.copy(alpha = 0.62f), cloudRimColor.copy(alpha = 0.42f), sharedPath)
 
     val normPhase = p1 / TWO_PI
     for (i in BUBBLE_X.indices) {
         val r = w * BUBBLE_RADIUS_FACTOR[i]
         val speed = BUBBLE_SPEED_MULT[i]
         val progress = (normPhase * speed + BUBBLE_PHASE_OFFSET[i]) % 1f
-
         val totalSpan = h + r * 4f
         val cy = (h + r * 2f) - progress * totalSpan
-
         val wobbleX = sin(p1 * speed + i * 1.3f) * (w * 0.032f)
         val cx = (BUBBLE_X[i] * w + wobbleX).coerceIn(r, w - r)
         val center = Offset(cx, cy)
 
         drawCircle(
             brush = Brush.radialGradient(
-                colors = listOf(
-                    bubbleFillColor.copy(alpha = 0.10f),
-                    bubbleFillColor.copy(alpha = 0.34f),
-                    bubbleRimColor.copy(alpha = 0.52f)
-                ),
+                colors = listOf(bubbleFillColor.copy(alpha = 0.10f), bubbleFillColor.copy(alpha = 0.34f), bubbleRimColor.copy(alpha = 0.52f)),
                 center = Offset(cx - r * 0.22f, cy - r * 0.22f),
                 radius = r
             ),
             center = center,
             radius = r
         )
-
-        drawCircle(
-            color = bubbleRimColor.copy(alpha = 0.46f),
-            radius = r,
-            center = center,
-            style = Stroke(width = 1.6f)
-        )
-
-        drawCircle(
-            color = bubbleGlintColor.copy(alpha = 0.42f),
-            radius = r * 0.24f,
-            center = Offset(cx - r * 0.36f, cy - r * 0.36f)
-        )
+        drawCircle(color = bubbleRimColor.copy(alpha = 0.46f), radius = r, center = center, style = Stroke(width = 1.6f))
+        drawCircle(color = bubbleGlintColor.copy(alpha = 0.42f), radius = r * 0.24f, center = Offset(cx - r * 0.36f, cy - r * 0.36f))
     }
 }
 
@@ -735,37 +786,20 @@ private fun DrawScope.draw2DCloud(
     val left = cx - cloudW * 0.5f
     val top = cy - cloudH * 0.5f
 
-    drawRoundRect(
-        color = bodyColor,
-        topLeft = Offset(left, top),
-        size = Size(cloudW, cloudH),
-        cornerRadius = CornerRadius(cloudH * 0.5f, cloudH * 0.5f)
-    )
-    drawCircle(
-        color = bodyColor,
-        radius = cloudH * 0.58f,
-        center = Offset(cx - cloudW * 0.22f, top + cloudH * 0.15f)
-    )
-    drawCircle(
-        color = bodyColor,
-        radius = cloudH * 0.78f,
-        center = Offset(cx + cloudW * 0.04f, top - cloudH * 0.05f)
-    )
-    drawCircle(
-        color = bodyColor,
-        radius = cloudH * 0.50f,
-        center = Offset(cx + cloudW * 0.26f, top + cloudH * 0.22f)
-    )
+    drawRoundRect(color = bodyColor, topLeft = Offset(left, top), size = Size(cloudW, cloudH), cornerRadius = CornerRadius(cloudH * 0.5f, cloudH * 0.5f))
+    drawCircle(color = bodyColor, radius = cloudH * 0.58f, center = Offset(cx - cloudW * 0.22f, top + cloudH * 0.15f))
+    drawCircle(color = bodyColor, radius = cloudH * 0.78f, center = Offset(cx + cloudW * 0.04f, top - cloudH * 0.05f))
+    drawCircle(color = bodyColor, radius = cloudH * 0.50f, center = Offset(cx + cloudW * 0.26f, top + cloudH * 0.22f))
 
     sharedPath.reset()
     sharedPath.moveTo(left + cloudW * 0.12f, top)
     sharedPath.quadraticTo(cx, top - cloudH * 0.85f, left + cloudW * 0.88f, top)
-    drawPath(
-        path = sharedPath,
-        color = rimColor,
-        style = Stroke(width = 1.5f, cap = StrokeCap.Round)
-    )
+    drawPath(path = sharedPath, color = rimColor, style = Stroke(width = 1.5f, cap = StrokeCap.Round))
 }
+
+// ============================================================================
+// TIME DYNAMIC THEME (TD)
+// ============================================================================
 
 private fun DrawScope.drawTimeDynamic(
     w: Float,
@@ -832,11 +866,7 @@ private fun DrawScope.drawTimeDynamic(
         val arcY2 = secondaryArcY[i]
 
         drawRect(
-            brush = Brush.verticalGradient(
-                colors = listOf(baseDark, panelDark, midGlow.copy(alpha = 0.28f), baseDark),
-                startY = 0f,
-                endY = h
-            ),
+            brush = Brush.verticalGradient(colors = listOf(baseDark, panelDark, midGlow.copy(alpha = 0.28f), baseDark), startY = 0f, endY = h),
             topLeft = Offset(left, 0f),
             size = Size(panelWidth, h)
         )
@@ -846,13 +876,7 @@ private fun DrawScope.drawTimeDynamic(
         if (upperBottom > upperTop) {
             drawRect(
                 brush = Brush.verticalGradient(
-                    colors = listOf(
-                        Color.Transparent,
-                        midGlow.copy(alpha = 0.24f),
-                        brightCore.copy(alpha = 0.48f),
-                        midGlow.copy(alpha = 0.20f),
-                        Color.Transparent
-                    ),
+                    colors = listOf(Color.Transparent, midGlow.copy(alpha = 0.24f), brightCore.copy(alpha = 0.48f), midGlow.copy(alpha = 0.20f), Color.Transparent),
                     startY = upperTop,
                     endY = upperBottom
                 ),
@@ -866,15 +890,7 @@ private fun DrawScope.drawTimeDynamic(
         if (bandBottom > bandTop) {
             drawRect(
                 brush = Brush.verticalGradient(
-                    colors = listOf(
-                        Color.Transparent,
-                        midGlow.copy(alpha = 0.25f),
-                        brightCore.copy(alpha = 0.68f),
-                        highlightEdge.copy(alpha = 0.78f),
-                        brightCore.copy(alpha = 0.58f),
-                        midGlow.copy(alpha = 0.20f),
-                        Color.Transparent
-                    ),
+                    colors = listOf(Color.Transparent, midGlow.copy(alpha = 0.25f), brightCore.copy(alpha = 0.68f), highlightEdge.copy(alpha = 0.78f), brightCore.copy(alpha = 0.58f), midGlow.copy(alpha = 0.20f), Color.Transparent),
                     startY = bandTop,
                     endY = bandBottom
                 ),
@@ -901,28 +917,14 @@ private fun DrawScope.drawTimeDynamic(
 
     drawPath(
         path = sharedPath,
-        brush = Brush.horizontalGradient(
-            colors = listOf(
-                brightCore.copy(alpha = 0.35f),
-                highlightEdge.copy(alpha = 0.75f),
-                brightCore.copy(alpha = 0.35f)
-            )
-        ),
+        brush = Brush.horizontalGradient(colors = listOf(brightCore.copy(alpha = 0.35f), highlightEdge.copy(alpha = 0.75f), brightCore.copy(alpha = 0.35f))),
         style = Stroke(width = 2.2f, cap = StrokeCap.Round)
     )
 
     for (i in 1 until numPanels) {
         val seamX = i * panelWidth
         drawLine(
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    highlightEdge.copy(alpha = 0.05f),
-                    highlightEdge.copy(alpha = 0.36f),
-                    highlightEdge.copy(alpha = 0.05f)
-                ),
-                startY = 0f,
-                endY = h
-            ),
+            brush = Brush.verticalGradient(colors = listOf(highlightEdge.copy(alpha = 0.05f), highlightEdge.copy(alpha = 0.36f), highlightEdge.copy(alpha = 0.05f)), startY = 0f, endY = h),
             start = Offset(seamX, 0f),
             end = Offset(seamX, h),
             strokeWidth = 1.3f
@@ -930,11 +932,10 @@ private fun DrawScope.drawTimeDynamic(
     }
 }
 
-// Resonance Tunnel Theme (RT / RESONANCE_TUNNEL):
-// Inspired by hypnotic ribbed concentric perspective architecture (Unsplash reference).
-// Renders an infinite zoom vortex of nested elliptical ribs and flared amphitheater wings
-// receding into a dark, calm horizon. Zero stutter, mathematically seamless 0..1 phase loop,
-// zero per-frame allocations, and 3 dark time-of-day palettes.
+// ============================================================================
+// RESONANCE TUNNEL THEME (RT)
+// ============================================================================
+
 private fun DrawScope.drawResonanceTunnel(
     w: Float,
     h: Float,
@@ -953,81 +954,58 @@ private fun DrawScope.drawResonanceTunnel(
     val wingAccent: Color
 
     when (period) {
-        TimePeriod.MORNING -> { // Morning: Deep Forest Obsidian & Moss-Sage Metals
+        TimePeriod.MORNING -> {
             bgTop = Color(0xFF030504)
             bgHorizon = Color(0xFF0B140E)
             bgBottom = Color(0xFF040705)
             tunnelCoreGlow = Color(0xFF283D2D)
             ribDarkFill = Color(0xFF0C140E)
             ribMidFill = Color(0xFF1B291E)
-            ribHighlight = Color(0xFF4C6B52) // Sage-Jade rim
-            wingAccent = Color(0xFF63513F)   // Warm clay secondary
+            ribHighlight = Color(0xFF4C6B52)
+            wingAccent = Color(0xFF63513F)
         }
-        TimePeriod.AFTERNOON -> { // Afternoon: Deep Espresso-Charcoal & Warm Bronze Metals
+        TimePeriod.AFTERNOON -> {
             bgTop = Color(0xFF050403)
             bgHorizon = Color(0xFF140E08)
             bgBottom = Color(0xFF070503)
             tunnelCoreGlow = Color(0xFF3D2B17)
             ribDarkFill = Color(0xFF140D07)
             ribMidFill = Color(0xFF261B10)
-            ribHighlight = Color(0xFF7D5E37) // Warm Bronze-Ochre rim
-            wingAccent = Color(0xFF5A442E)   // Amber-taupe secondary
+            ribHighlight = Color(0xFF7D5E37)
+            wingAccent = Color(0xFF5A442E)
         }
-        TimePeriod.NIGHT -> { // Night: Pure Pitch Obsidian & Slate-Titanium Metals
+        TimePeriod.NIGHT -> {
             bgTop = Color(0xFF010204)
             bgHorizon = Color(0xFF080D18)
             bgBottom = Color(0xFF020306)
             tunnelCoreGlow = Color(0xFF1C2740)
             ribDarkFill = Color(0xFF080C14)
             ribMidFill = Color(0xFF141C2B)
-            ribHighlight = Color(0xFF486382) // Titanium-Cyan rim
-            wingAccent = Color(0xFF384357)   // Slate-charcoal secondary
+            ribHighlight = Color(0xFF486382)
+            wingAccent = Color(0xFF384357)
         }
     }
 
-    // 1. Deep Perspective Horizon Background
-    drawRect(
-        brush = Brush.verticalGradient(
-            colors = listOf(bgTop, bgHorizon, bgBottom),
-            startY = 0f,
-            endY = h
-        )
-    )
+    drawRect(brush = Brush.verticalGradient(colors = listOf(bgTop, bgHorizon, bgBottom), startY = 0f, endY = h))
 
-    // Vanishing Point Anchor (slightly above center for dramatic perspective)
     val horizonY = h * 0.44f
     val horizonCenter = Offset(w * 0.5f, horizonY)
 
-    // 2. Soft Vanishing Core Glow (calm depth, no white glare)
     drawCircle(
-        brush = Brush.radialGradient(
-            colors = listOf(
-                tunnelCoreGlow.copy(alpha = 0.38f * pulse),
-                tunnelCoreGlow.copy(alpha = 0.12f),
-                Color.Transparent
-            ),
-            center = horizonCenter,
-            radius = w * 0.38f
-        ),
+        brush = Brush.radialGradient(colors = listOf(tunnelCoreGlow.copy(alpha = 0.38f * pulse), tunnelCoreGlow.copy(alpha = 0.12f), Color.Transparent), center = horizonCenter, radius = w * 0.38f),
         center = horizonCenter,
         radius = w * 0.38f
     )
 
-    // 3. Infinite Concentric Ribbed Shells
-    // 8 nested rings receding into distance. Master cycle wraps seamlessly at TWO_PI.
     val numRings = 8
     val loopProgress = (p1 / TWO_PI) % 1f
 
     for (i in 0 until numRings) {
-        // Continuous z-depth from 0f (vanishing point) to 1f (camera/screen plane)
         val z = (loopProgress + i.toFloat()) / numRings.toFloat()
         val normalizedZ = z % 1f
-
-        // Exponential perspective growth so rings accelerate smoothly toward camera
         val scale = normalizedZ * normalizedZ
         if (scale < 0.005f) continue
 
-        // Smooth alpha envelope: fades in smoothly near vanishing point, fades out at camera edge
         val ringAlpha = when {
             normalizedZ < 0.15f -> normalizedZ / 0.15f
             normalizedZ > 0.82f -> (1f - normalizedZ) / 0.18f
@@ -1037,122 +1015,54 @@ private fun DrawScope.drawResonanceTunnel(
         val rx = w * (0.08f + 0.88f * scale)
         val ry = h * (0.05f + 0.54f * scale)
         val wingHeight = ry * 0.45f
-
         val ringLeft = horizonCenter.x - rx
         val ringRight = horizonCenter.x + rx
         val ringBottom = horizonCenter.y + ry
 
-        // 3a. Upper Elliptical Vault Arch (receding ceiling ribs)
         sharedPath.reset()
         sharedPath.moveTo(ringLeft, horizonCenter.y)
-        sharedPath.cubicTo(
-            ringLeft, horizonCenter.y - ry * 0.92f,
-            ringRight, horizonCenter.y - ry * 0.92f,
-            ringRight, horizonCenter.y
-        )
-        drawPath(
-            path = sharedPath,
-            color = ribMidFill.copy(alpha = ringAlpha * 0.45f),
-            style = Stroke(width = 1.2f + 2.5f * scale, cap = StrokeCap.Round)
-        )
+        sharedPath.cubicTo(ringLeft, horizonCenter.y - ry * 0.92f, ringRight, horizonCenter.y - ry * 0.92f, ringRight, horizonCenter.y)
+        drawPath(path = sharedPath, color = ribMidFill.copy(alpha = ringAlpha * 0.45f), style = Stroke(width = 1.2f + 2.5f * scale, cap = StrokeCap.Round))
 
-        // 3b. Lower Flared Amphitheater Rib (nested bowl with curved wings)
-        // Curves downward in the center trough and flares smoothly upward at left & right wings
         sharedPath.reset()
         val wingTipLeft = Offset(ringLeft, horizonCenter.y - wingHeight)
         val wingTipRight = Offset(ringRight, horizonCenter.y - wingHeight)
         val bowlBottom = Offset(horizonCenter.x, ringBottom)
 
         sharedPath.moveTo(wingTipLeft.x, wingTipLeft.y)
-        // Downward flared contour toward bowl bottom
-        sharedPath.cubicTo(
-            horizonCenter.x - rx * 0.70f, horizonCenter.y + ry * 0.85f,
-            horizonCenter.x - rx * 0.28f, ringBottom,
-            bowlBottom.x, bowlBottom.y
-        )
-        // Upward flared contour toward right wing tip
-        sharedPath.cubicTo(
-            horizonCenter.x + rx * 0.28f, ringBottom,
-            horizonCenter.x + rx * 0.70f, horizonCenter.y + ry * 0.85f,
-            wingTipRight.x, wingTipRight.y
-        )
+        sharedPath.cubicTo(horizonCenter.x - rx * 0.70f, horizonCenter.y + ry * 0.85f, horizonCenter.x - rx * 0.28f, ringBottom, bowlBottom.x, bowlBottom.y)
+        sharedPath.cubicTo(horizonCenter.x + rx * 0.28f, ringBottom, horizonCenter.x + rx * 0.70f, horizonCenter.y + ry * 0.85f, wingTipRight.x, wingTipRight.y)
 
-        // Secondary inner rib line for ribbed/grooved texture (from reference image)
         val innerTroughY = ringBottom - ry * 0.16f
-        sharedPath.cubicTo(
-            horizonCenter.x + rx * 0.55f, horizonCenter.y + ry * 0.65f,
-            horizonCenter.x + rx * 0.22f, innerTroughY,
-            horizonCenter.x, innerTroughY
-        )
-        sharedPath.cubicTo(
-            horizonCenter.x - rx * 0.22f, innerTroughY,
-            horizonCenter.x - rx * 0.55f, horizonCenter.y + ry * 0.65f,
-            wingTipLeft.x, wingTipLeft.y
-        )
+        sharedPath.cubicTo(horizonCenter.x + rx * 0.55f, horizonCenter.y + ry * 0.65f, horizonCenter.x + rx * 0.22f, innerTroughY, horizonCenter.x, innerTroughY)
+        sharedPath.cubicTo(horizonCenter.x - rx * 0.22f, innerTroughY, horizonCenter.x - rx * 0.55f, horizonCenter.y + ry * 0.65f, wingTipLeft.x, wingTipLeft.y)
         sharedPath.close()
 
-        // Rib trough shadow fill
-        drawPath(
-            path = sharedPath,
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    ribDarkFill.copy(alpha = ringAlpha * 0.75f),
-                    ribMidFill.copy(alpha = ringAlpha * 0.85f),
-                    ribDarkFill.copy(alpha = ringAlpha * 0.90f)
-                ),
-                startY = horizonCenter.y,
-                endY = ringBottom
-            )
-        )
+        drawPath(path = sharedPath, brush = Brush.verticalGradient(colors = listOf(ribDarkFill.copy(alpha = ringAlpha * 0.75f), ribMidFill.copy(alpha = ringAlpha * 0.85f), ribDarkFill.copy(alpha = ringAlpha * 0.90f)), startY = horizonCenter.y, endY = ringBottom))
 
-        // Illuminated specular rib crest line along the upper bowl rim
         sharedPath.reset()
         sharedPath.moveTo(wingTipLeft.x, wingTipLeft.y)
-        sharedPath.cubicTo(
-            horizonCenter.x - rx * 0.70f, horizonCenter.y + ry * 0.85f,
-            horizonCenter.x - rx * 0.28f, ringBottom,
-            bowlBottom.x, bowlBottom.y
-        )
-        sharedPath.cubicTo(
-            horizonCenter.x + rx * 0.28f, ringBottom,
-            horizonCenter.x + rx * 0.70f, horizonCenter.y + ry * 0.85f,
-            wingTipRight.x, wingTipRight.y
-        )
+        sharedPath.cubicTo(horizonCenter.x - rx * 0.70f, horizonCenter.y + ry * 0.85f, horizonCenter.x - rx * 0.28f, ringBottom, bowlBottom.x, bowlBottom.y)
+        sharedPath.cubicTo(horizonCenter.x + rx * 0.28f, ringBottom, horizonCenter.x + rx * 0.70f, horizonCenter.y + ry * 0.85f, wingTipRight.x, wingTipRight.y)
 
         drawPath(
             path = sharedPath,
-            brush = Brush.horizontalGradient(
-                colors = listOf(
-                    wingAccent.copy(alpha = ringAlpha * 0.35f),
-                    ribHighlight.copy(alpha = ringAlpha * 0.85f),
-                    wingAccent.copy(alpha = ringAlpha * 0.35f)
-                ),
-                startX = ringLeft,
-                endX = ringRight
-            ),
-            style = Stroke(
-                width = 1.0f + 2.4f * scale,
-                cap = StrokeCap.Round,
-                join = StrokeJoin.Round
-            )
+            brush = Brush.horizontalGradient(colors = listOf(wingAccent.copy(alpha = ringAlpha * 0.35f), ribHighlight.copy(alpha = ringAlpha * 0.85f), wingAccent.copy(alpha = ringAlpha * 0.35f)), startX = ringLeft, endX = ringRight),
+            style = Stroke(width = 1.0f + 2.4f * scale, cap = StrokeCap.Round, join = StrokeJoin.Round)
         )
 
-        // Central nested elliptical eye ring around horizon axis
         if (scale < 0.50f) {
             val eyeRx = rx * 0.38f
             val eyeRy = ry * 0.32f
-            drawOval(
-                color = ribHighlight.copy(alpha = ringAlpha * 0.40f),
-                topLeft = Offset(horizonCenter.x - eyeRx, horizonCenter.y - eyeRy * 0.5f),
-                size = Size(eyeRx * 2f, eyeRy),
-                style = Stroke(width = 1.1f)
-            )
+            drawOval(color = ribHighlight.copy(alpha = ringAlpha * 0.40f), topLeft = Offset(horizonCenter.x - eyeRx, horizonCenter.y - eyeRy * 0.5f), size = Size(eyeRx * 2f, eyeRy), style = Stroke(width = 1.1f))
         }
     }
 }
 
-// Looping Trios Theme (LT):
-// Pure black high-contrast kinetic geometry with analytically interpolated stripes (zero clipPath).
+// ============================================================================
+// LOOPING TRIOS THEME (LT)
+// ============================================================================
+
 @Composable
 fun LoopingTriosBackground(
     modifier: Modifier = Modifier,
@@ -1218,14 +1128,7 @@ fun LoopingTriosBackground(
             }
 
             drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        resolvedSolid.copy(alpha = 0.28f),
-                        Color.Transparent
-                    ),
-                    center = Offset(w * 0.5f, h * 0.48f),
-                    radius = w * 0.75f
-                ),
+                brush = Brush.radialGradient(colors = listOf(resolvedSolid.copy(alpha = 0.28f), Color.Transparent), center = Offset(w * 0.5f, h * 0.48f), radius = w * 0.75f),
                 center = Offset(w * 0.5f, h * 0.48f),
                 radius = w * 0.75f
             )
@@ -1233,7 +1136,6 @@ fun LoopingTriosBackground(
             val cellW = cellSizeDp * density
             val cellH = cellSizeDp * 1.15f * density
             val triR = cellW * 0.185f
-
             val cols = ceil((w / cellW).toDouble()).toInt() + 1
             val rows = ceil((h / cellH).toDouble()).toInt() + 1
 
@@ -1248,31 +1150,8 @@ fun LoopingTriosBackground(
                     val primaryAngle = phase * 90f + localRipple
                     val secondaryAngle = -phase * 90f - localRipple
 
-                    drawTrioUnit(
-                        centerX = baseX + cellW * 0.28f,
-                        centerY = baseY + cellH * 0.58f,
-                        r = triR,
-                        primaryAngle = primaryAngle,
-                        secondaryAngle = secondaryAngle,
-                        solidColor = resolvedSolid,
-                        stripeColor = resolvedStripe,
-                        rimColor = rimAccent,
-                        path = reusablePath,
-                        density = density
-                    )
-
-                    drawTrioUnit(
-                        centerX = baseX + cellW * 0.72f,
-                        centerY = baseY + cellH * 0.32f,
-                        r = triR,
-                        primaryAngle = primaryAngle,
-                        secondaryAngle = secondaryAngle,
-                        solidColor = resolvedSolid,
-                        stripeColor = resolvedStripe,
-                        rimColor = rimAccent,
-                        path = reusablePath,
-                        density = density
-                    )
+                    drawTrioUnit(baseX + cellW * 0.28f, baseY + cellH * 0.58f, triR, primaryAngle, secondaryAngle, resolvedSolid, resolvedStripe, rimAccent, reusablePath, density)
+                    drawTrioUnit(baseX + cellW * 0.72f, baseY + cellH * 0.32f, triR, primaryAngle, secondaryAngle, resolvedSolid, resolvedStripe, rimAccent, reusablePath, density)
                 }
             }
         }
@@ -1293,61 +1172,18 @@ private fun DrawScope.drawTrioUnit(
 ) {
     val verticalOffset = r * 1.05f
 
-    withTransform({
-        translate(centerX, centerY)
-        rotate(secondaryAngle, pivot = Offset.Zero)
-    }) {
-        drawStripedTriangleFast(
-            p1 = Offset(-r * 1.1f, 0f),
-            p2 = Offset(0f, -verticalOffset),
-            p3 = Offset(0f, verticalOffset),
-            color = stripeColor,
-            density = density
-        )
+    withTransform({ translate(centerX, centerY); rotate(secondaryAngle, pivot = Offset.Zero) }) {
+        drawStripedTriangleFast(Offset(-r * 1.1f, 0f), Offset(0f, -verticalOffset), Offset(0f, verticalOffset), stripeColor, density)
     }
 
-    withTransform({
-        translate(centerX, centerY - verticalOffset)
-        rotate(primaryAngle, pivot = Offset.Zero)
-    }) {
-        drawStripedTriangleFast(
-            p1 = Offset(0f, -r),
-            p2 = Offset(-r * 1.1f, -r * 0.35f),
-            p3 = Offset(r * 0.85f, 0f),
-            color = stripeColor,
-            density = density
-        )
-        drawSolidTriangleFast(
-            path = path,
-            p1 = Offset(0f, -r),
-            p2 = Offset(-r * 0.95f, 0f),
-            p3 = Offset(r * 0.95f, 0f),
-            solidColor = solidColor,
-            rimColor = rimColor,
-            density = density
-        )
+    withTransform({ translate(centerX, centerY - verticalOffset); rotate(primaryAngle, pivot = Offset.Zero) }) {
+        drawStripedTriangleFast(Offset(0f, -r), Offset(-r * 1.1f, -r * 0.35f), Offset(r * 0.85f, 0f), stripeColor, density)
+        drawSolidTriangleFast(path, Offset(0f, -r), Offset(-r * 0.95f, 0f), Offset(r * 0.95f, 0f), solidColor, rimColor, density)
     }
 
-    withTransform({
-        translate(centerX, centerY + verticalOffset)
-        rotate(primaryAngle, pivot = Offset.Zero)
-    }) {
-        drawStripedTriangleFast(
-            p1 = Offset(0f, r),
-            p2 = Offset(-r * 1.1f, r * 0.35f),
-            p3 = Offset(r * 0.85f, 0f),
-            color = stripeColor,
-            density = density
-        )
-        drawSolidTriangleFast(
-            path = path,
-            p1 = Offset(0f, r),
-            p2 = Offset(-r * 0.95f, 0f),
-            p3 = Offset(r * 0.95f, 0f),
-            solidColor = solidColor,
-            rimColor = rimColor,
-            density = density
-        )
+    withTransform({ translate(centerX, centerY + verticalOffset); rotate(primaryAngle, pivot = Offset.Zero) }) {
+        drawStripedTriangleFast(Offset(0f, r), Offset(-r * 1.1f, r * 0.35f), Offset(r * 0.85f, 0f), stripeColor, density)
+        drawSolidTriangleFast(path, Offset(0f, r), Offset(-r * 0.95f, 0f), Offset(r * 0.95f, 0f), solidColor, rimColor, density)
     }
 }
 
@@ -1367,12 +1203,7 @@ private fun DrawScope.drawSolidTriangleFast(
     path.close()
 
     drawPath(path = path, color = solidColor)
-
-    drawPath(
-        path = path,
-        color = rimColor.copy(alpha = 0.68f),
-        style = Stroke(width = 1.15f * density, join = StrokeJoin.Round)
-    )
+    drawPath(path = path, color = rimColor.copy(alpha = 0.68f), style = Stroke(width = 1.15f * density, join = StrokeJoin.Round))
 }
 
 private fun DrawScope.drawStripedTriangleFast(
@@ -1391,62 +1222,299 @@ private fun DrawScope.drawStripedTriangleFast(
         val endX = p1.x + (p3.x - p1.x) * t
         val endY = p1.y + (p3.y - p1.y) * t
 
-        drawLine(
-            color = color,
-            start = Offset(startX, startY),
-            end = Offset(endX, endY),
-            strokeWidth = strokeW,
-            cap = StrokeCap.Round
-        )
+        drawLine(color = color, start = Offset(startX, startY), end = Offset(endX, endY), strokeWidth = strokeW, cap = StrokeCap.Round)
     }
 }
 
-// Clean White Theme (CW / CLEAN_WHITE):
-// Minimalist soft porcelain white with dark olive silk wave accents.
+// ============================================================================
+// CLEAN WHITE THEME (CW)
+// ============================================================================
+
 private fun DrawScope.drawCleanWhite(
     w: Float,
     h: Float,
     p1: Float,
     pulse: Float,
-    sharedPath: Path
+    sharedPath: Path,
+    period: TimePeriod = TimePeriod.current()
 ) {
-    // 1. Pristine soft porcelain white vertical gradient background
-    drawRect(
-        brush = Brush.verticalGradient(
-            colors = listOf(
-                Color(0xFFF0F0E6),
-                Color(0xFFE3E9E1),
-                Color(0xFFD5DED6),
-            )
-        )
-    )
+    val gradientColors: List<Color>
+    val waveColor: Color
+    val moteColor: Color
 
-    // 2. Soft subtle olive silk wave accent
+    when (period) {
+        TimePeriod.MORNING -> {
+            gradientColors = listOf(Color(0xFFF1F4ED), Color(0xFFE4ECE2), Color(0xFFD6E0D5))
+            waveColor = Color(0xFF344A38).copy(alpha = 0.06f)
+            moteColor = Color(0xFF2D3F2F).copy(alpha = 0.07f)
+        }
+        TimePeriod.AFTERNOON -> {
+            gradientColors = listOf(Color(0xFFF0F0E6), Color(0xFFE3E9E1), Color(0xFFD5DED6))
+            waveColor = Color(0xFF384D3C).copy(alpha = 0.05f)
+            moteColor = Color(0xFF2C3E2B).copy(alpha = 0.06f)
+        }
+        TimePeriod.NIGHT -> {
+            gradientColors = listOf(Color(0xFFECEFF3), Color(0xFFE0E5EC), Color(0xFFD3D9E2))
+            waveColor = Color(0xFF2F3C48).copy(alpha = 0.05f)
+            moteColor = Color(0xFF24303B).copy(alpha = 0.06f)
+        }
+    }
+
+    drawRect(brush = Brush.verticalGradient(colors = gradientColors))
+
     val waveY = h * 0.42f + sin(p1) * 18f
     sharedPath.reset()
     sharedPath.moveTo(0f, waveY)
-    sharedPath.cubicTo(
-        w * 0.35f, waveY - 35f * pulse,
-        w * 0.65f, waveY + 35f * pulse,
-        w, waveY
-    )
+    sharedPath.cubicTo(w * 0.35f, waveY - 35f * pulse, w * 0.65f, waveY + 35f * pulse, w, waveY)
     sharedPath.lineTo(w, h)
     sharedPath.lineTo(0f, h)
     sharedPath.close()
 
-    drawPath(
-        path = sharedPath,
-        color = Color(0xFF384D3C).copy(alpha = 0.05f)
-    )
+    drawPath(path = sharedPath, color = waveColor)
 
-    // 3. Gentle floating dark olive light motes
     for (i in MOTE_X.indices) {
         val mx = MOTE_X[i] * w
         val my = (MOTE_Y[i] * h + sin(p1 + i) * 12f) % h
-        drawCircle(
-            color = Color(0xFF2C3E2B).copy(alpha = 0.06f),
-            radius = MOTE_R[i] * 2.2f,
-            center = Offset(mx, my)
-        )
+        drawCircle(color = moteColor, radius = MOTE_R[i] * 2.2f, center = Offset(mx, my))
+    }
+}
+
+// ============================================================================
+// 4 BEST LIGHT SANCTUARY THEMES (TP, ZR, HW, QL)
+// ============================================================================
+
+private class LightSanctuaryPalette(
+    val baseGradient: List<Color>,
+    val baseSolid: Color,
+    val primaryContour: Color,
+    val secondaryContour: Color,
+    val softReliefLight: Color,
+    val softReliefShadow: Color,
+    val ambientOrb1: Color,
+    val ambientOrb2: Color
+)
+
+private val LIGHT_MORNING_PALETTE = LightSanctuaryPalette(
+    baseGradient = listOf(Color(0xFFE3ECE6), Color(0xFFDCE6DF), Color(0xFFE5ECE6)),
+    baseSolid = Color(0xFFE1EAE4),
+    primaryContour = Color(0xFFB5C7BC),
+    secondaryContour = Color(0xFFC9BFB5),
+    softReliefLight = Color(0xFFF0F5F1),
+    softReliefShadow = Color(0xFFBCCBC2),
+    ambientOrb1 = Color(0xFFC2D6CA).copy(alpha = 0.45f),
+    ambientOrb2 = Color(0xFFDED0C4).copy(alpha = 0.40f)
+)
+
+private val LIGHT_AFTERNOON_PALETTE = LightSanctuaryPalette(
+    baseGradient = listOf(Color(0xFFEBE5D8), Color(0xFFE3DCCD), Color(0xFFE9E2D4)),
+    baseSolid = Color(0xFFE7E0D2),
+    primaryContour = Color(0xFFC2B7A1),
+    secondaryContour = Color(0xFFB8C2AE),
+    softReliefLight = Color(0xFFF4EFE4),
+    softReliefShadow = Color(0xFFC7BDA9),
+    ambientOrb1 = Color(0xFFD4C8B0).copy(alpha = 0.45f),
+    ambientOrb2 = Color(0xFFC4CEB8).copy(alpha = 0.40f)
+)
+
+private val LIGHT_NIGHT_PALETTE = LightSanctuaryPalette(
+    baseGradient = listOf(Color(0xFFE2E6F0), Color(0xFFD9DFEB), Color(0xFFE0E4EE)),
+    baseSolid = Color(0xFFDFE3ED),
+    primaryContour = Color(0xFFB2BDD1),
+    secondaryContour = Color(0xFFC0B8D1),
+    softReliefLight = Color(0xFFEDF0F7),
+    softReliefShadow = Color(0xFFB8C2D4),
+    ambientOrb1 = Color(0xFFBEC8DC).copy(alpha = 0.45f),
+    ambientOrb2 = Color(0xFFCAC0DC).copy(alpha = 0.40f)
+)
+
+private fun resolveLightPalette(period: TimePeriod): LightSanctuaryPalette = when (period) {
+    TimePeriod.MORNING -> LIGHT_MORNING_PALETTE
+    TimePeriod.AFTERNOON -> LIGHT_AFTERNOON_PALETTE
+    TimePeriod.NIGHT -> LIGHT_NIGHT_PALETTE
+}
+
+private fun DrawScope.drawLightTopography(
+    w: Float,
+    h: Float,
+    p1: Float,
+    p2: Float,
+    pulse: Float,
+    period: TimePeriod,
+    sharedPath: Path
+) {
+    val pal = resolveLightPalette(period)
+    drawRect(brush = Brush.verticalGradient(colors = pal.baseGradient))
+
+    val orb1 = Offset(w * (0.25f + 0.12f * sin(p1)), h * (0.24f + 0.08f * cos(p2)))
+    drawCircle(brush = Brush.radialGradient(colors = listOf(pal.ambientOrb1, Color.Transparent), center = orb1, radius = w * 0.75f), center = orb1, radius = w * 0.75f)
+
+    val orb2 = Offset(w * (0.75f - 0.12f * cos(p1)), h * (0.72f + 0.08f * sin(p2)))
+    drawCircle(brush = Brush.radialGradient(colors = listOf(pal.ambientOrb2, Color.Transparent), center = orb2, radius = w * 0.75f), center = orb2, radius = w * 0.75f)
+
+    val padX = w * 0.08f
+    for (i in 0 until 5) {
+        val baseNormY = 0.12f + i * 0.19f
+        val phaseShift = i * 1.15f
+        val startY = h * (baseNormY + 0.05f * sin(p1 + phaseShift))
+        val ctrl1X = w * (0.28f + 0.08f * cos(p2 + phaseShift))
+        val ctrl1Y = h * (baseNormY - 0.09f * cos(p1 + phaseShift))
+        val ctrl2X = w * (0.72f - 0.08f * sin(p1 + phaseShift))
+        val ctrl2Y = h * (baseNormY + 0.10f * sin(p2 + phaseShift))
+        val endY = h * (baseNormY + 0.05f * cos(p2 + phaseShift))
+
+        sharedPath.reset()
+        sharedPath.moveTo(-padX, startY)
+        sharedPath.cubicTo(ctrl1X, ctrl1Y, ctrl2X, ctrl2Y, w + padX, endY)
+
+        val outerColor = if (i % 2 == 0) pal.primaryContour else pal.secondaryContour
+        drawPath(path = sharedPath, color = outerColor.copy(alpha = 0.55f), style = Stroke(width = w * 0.095f * pulse, cap = StrokeCap.Round, join = StrokeJoin.Round))
+        drawPath(path = sharedPath, color = pal.softReliefLight.copy(alpha = 0.68f), style = Stroke(width = w * 0.042f, cap = StrokeCap.Round, join = StrokeJoin.Round))
+        drawPath(path = sharedPath, color = outerColor.copy(alpha = 0.62f), style = Stroke(width = w * 0.012f, cap = StrokeCap.Round, join = StrokeJoin.Round))
+    }
+
+    val island1 = Offset(w * (0.74f + 0.04f * cos(p1)), h * (0.22f + 0.03f * sin(p2)))
+    drawOval(color = pal.primaryContour.copy(alpha = 0.45f), topLeft = Offset(island1.x - w * 0.18f, island1.y - h * 0.065f), size = Size(w * 0.36f, h * 0.13f), style = Stroke(width = w * 0.032f))
+    drawOval(color = pal.softReliefLight.copy(alpha = 0.65f), topLeft = Offset(island1.x - w * 0.11f, island1.y - h * 0.038f), size = Size(w * 0.22f, h * 0.076f), style = Stroke(width = w * 0.020f))
+
+    val island2 = Offset(w * (0.26f - 0.04f * sin(p1)), h * (0.68f + 0.03f * cos(p2)))
+    drawOval(color = pal.secondaryContour.copy(alpha = 0.45f), topLeft = Offset(island2.x - w * 0.20f, island2.y - h * 0.07f), size = Size(w * 0.40f, h * 0.14f), style = Stroke(width = w * 0.032f))
+    drawOval(color = pal.softReliefLight.copy(alpha = 0.65f), topLeft = Offset(island2.x - w * 0.12f, island2.y - h * 0.042f), size = Size(w * 0.24f, h * 0.084f), style = Stroke(width = w * 0.020f))
+}
+
+private fun DrawScope.drawLightZenRipples(
+    w: Float,
+    h: Float,
+    p1: Float,
+    p2: Float,
+    period: TimePeriod
+) {
+    val pal = resolveLightPalette(period)
+    drawRect(color = pal.baseSolid)
+
+    val normPhase = (p1 / TWO_PI) % 1f
+    val ringsPerDisc = 6
+
+    for (idx in ZEN_DISC_X.indices) {
+        val driftX = sin(p1 + idx * 0.9f) * (w * 0.018f)
+        val driftY = cos(p2 + idx * 0.7f) * (h * 0.012f)
+        val center = Offset(ZEN_DISC_X[idx] * w + driftX, ZEN_DISC_Y[idx] * h + driftY)
+        val maxR = w * ZEN_DISC_SCALE[idx]
+
+        drawCircle(color = pal.baseSolid, radius = maxR, center = center)
+        drawCircle(color = pal.softReliefShadow.copy(alpha = 0.45f), radius = maxR, center = center, style = Stroke(width = 1.6f))
+
+        val ringColor = if (idx % 2 == 0) pal.primaryContour else pal.secondaryContour
+
+        for (rIdx in 0 until ringsPerDisc) {
+            val ringProgress = ((rIdx.toFloat() + normPhase) / ringsPerDisc.toFloat()) % 1f
+            val r = maxR * (0.10f + 0.88f * ringProgress)
+            val alphaEnv = when {
+                ringProgress < 0.15f -> ringProgress / 0.15f
+                ringProgress > 0.85f -> (1f - ringProgress) / 0.15f
+                else -> 1f
+            }
+
+            drawCircle(color = pal.softReliefLight.copy(alpha = 0.65f * alphaEnv), radius = (r - 2.2f).coerceAtLeast(1f), center = center, style = Stroke(width = 2.0f))
+            drawCircle(color = ringColor.copy(alpha = 0.62f * alphaEnv), radius = r, center = center, style = Stroke(width = 2.2f))
+        }
+
+        drawCircle(color = ringColor.copy(alpha = 0.55f), radius = 3.2f, center = center)
+    }
+}
+
+private fun DrawScope.drawLightHalftoneWave(
+    w: Float,
+    h: Float,
+    p1: Float,
+    p2: Float,
+    period: TimePeriod
+) {
+    val pal = resolveLightPalette(period)
+    drawRect(brush = Brush.verticalGradient(colors = pal.baseGradient))
+
+    val cols = 15
+    val rows = 24
+    val spacingX = w / (cols - 1).toFloat()
+    val spacingY = h / (rows - 1).toFloat()
+    val maxDotRadius = spacingX * 0.24f
+
+    for (row in 0 until rows) {
+        val ny = row.toFloat() / (rows - 1).toFloat()
+        val baseY = row * spacingY
+
+        for (col in 0 until cols) {
+            val nx = col.toFloat() / (cols - 1).toFloat()
+            val baseX = col * spacingX
+
+            val wave1 = sin(nx * 4.5f + p1) * cos(ny * 3.5f - p1)
+            val wave2 = sin((nx + ny) * 3.2f - p2) * 0.5f
+            val elevation = (wave1 + wave2) / 1.5f
+
+            val displacedY = baseY + elevation * (h * 0.038f)
+            val displacedX = baseX + cos(ny * 4.0f + p1) * (w * 0.012f)
+
+            val normFactor = ((elevation + 1f) * 0.5f).coerceIn(0f, 1f)
+            val radius = maxDotRadius * (0.32f + 0.68f * normFactor)
+            val dotAlpha = 0.22f + 0.52f * normFactor
+            val dotColor = if ((row + col) % 3 == 0) pal.secondaryContour else pal.primaryContour
+
+            drawCircle(color = dotColor.copy(alpha = dotAlpha), radius = radius, center = Offset(displacedX, displacedY))
+        }
+    }
+}
+
+private fun DrawScope.drawLightQuiltedLattice(
+    w: Float,
+    h: Float,
+    p1: Float,
+    period: TimePeriod,
+    sharedPath: Path
+) {
+    val pal = resolveLightPalette(period)
+    drawRect(brush = Brush.verticalGradient(colors = pal.baseGradient))
+
+    val cols = 6
+    val tileW = w / cols.toFloat()
+    val tileH = tileW * 0.68f
+    val rows = ceil((h / (tileH * 0.5f)).toDouble()).toInt() + 2
+
+    for (row in -1 until rows) {
+        val isOddRow = (row and 1) != 0
+        val rowOffsetX = if (isOddRow) tileW * 0.5f else 0f
+        val cy = row * (tileH * 0.5f)
+
+        for (col in -1..cols) {
+            val cx = col * tileW + rowOffsetX
+            val wave = sin(p1 + col * 0.55f + row * 0.35f)
+            val normWave = (wave + 1f) * 0.5f
+
+            val halfW = tileW * 0.48f
+            val halfH = tileH * 0.48f
+
+            val topPt = Offset(cx, cy - halfH)
+            val rightPt = Offset(cx + halfW, cy)
+            val bottomPt = Offset(cx, cy + halfH)
+            val leftPt = Offset(cx - halfW, cy)
+
+            sharedPath.reset()
+            sharedPath.moveTo(topPt.x, topPt.y)
+            sharedPath.lineTo(rightPt.x, rightPt.y)
+            sharedPath.lineTo(bottomPt.x, bottomPt.y)
+            sharedPath.lineTo(leftPt.x, leftPt.y)
+            sharedPath.close()
+
+            val tileTopColor = pal.softReliefLight.copy(alpha = 0.45f + 0.30f * normWave)
+            val tileBotColor = pal.softReliefShadow.copy(alpha = 0.35f + 0.25f * (1f - normWave))
+
+            drawPath(
+                path = sharedPath,
+                brush = Brush.linearGradient(colors = listOf(tileTopColor, pal.baseSolid, tileBotColor), start = topPt, end = bottomPt)
+            )
+
+            drawLine(color = pal.softReliefLight.copy(alpha = 0.75f), start = leftPt, end = topPt, strokeWidth = 1.6f, cap = StrokeCap.Round)
+            drawLine(color = pal.softReliefLight.copy(alpha = 0.55f), start = topPt, end = rightPt, strokeWidth = 1.4f, cap = StrokeCap.Round)
+            drawLine(color = pal.primaryContour.copy(alpha = 0.55f), start = leftPt, end = bottomPt, strokeWidth = 1.5f, cap = StrokeCap.Round)
+            drawLine(color = pal.primaryContour.copy(alpha = 0.65f), start = bottomPt, end = rightPt, strokeWidth = 1.6f, cap = StrokeCap.Round)
+        }
     }
 }
