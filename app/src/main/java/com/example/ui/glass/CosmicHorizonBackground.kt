@@ -1414,9 +1414,9 @@ private fun DrawScope.drawCleanWhite(
     drawRect(
         brush = Brush.verticalGradient(
             colors = listOf(
-                Color(0xFFFFFFFF),
-                Color(0xFFF4F8F5),
-                Color(0xFFEBF0EC)
+                Color(0xFFF0F0E6),
+                Color(0xFFE3E9E1),
+                Color(0xFFD5DED6),
             )
         )
     )

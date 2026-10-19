@@ -256,16 +256,17 @@ fun GlassTile(
             Spacer(modifier = Modifier.width(11.dp))
 
             Column {
+                val isLight = LocalAmbientTheme.current.isLight
                 Text(
                     text = title,
-                    color = Color.White,
+                    color = if (isLight) Color(0xFF1E2A20) else Color.White,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
                     letterSpacing = (-0.2).sp
                 )
                 Text(
                     text = subtitle,
-                    color = Color.White.copy(alpha = 0.72f),
+                    color = if (isLight) Color(0xFF3B503E) else Color.White.copy(alpha = 0.72f),
                     fontSize = 11.sp
                 )
             }

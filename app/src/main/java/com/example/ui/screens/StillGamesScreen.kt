@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import com.example.ui.glass.isLight
 import android.os.SystemClock
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
@@ -312,8 +313,14 @@ private fun StillGameTopBar(
                     animationSpec = spring(dampingRatio = 0.55f, stiffness = 80f),
                     label = "topTabScale"
                 )
+                val isLight = com.example.ui.glass.LocalAmbientTheme.current.isLight
+                val targetColor = if (isSelected) {
+                    if (isLight) Color(0xFF1E2A20) else Color.White
+                } else {
+                    if (isLight) Color(0xFF3B503E) else Color.White.copy(alpha = 0.6f)
+                }
                 val textColor by animateColorAsState(
-                    targetValue = if (isSelected) Color.White else Color.White.copy(alpha = 0.6f),
+                    targetValue = targetColor,
                     label = "topTabColor"
                 )
 
@@ -504,12 +511,16 @@ private fun ReflexCoreGame() {
                 ),
             contentAlignment = Alignment.Center
         ) {
+            val isLight = com.example.ui.glass.LocalAmbientTheme.current.isLight
+            val gameText = if (isLight) Color(0xFF1E2A20) else Color.White
+            val gameSubtle = if (isLight) Color(0xFF3B503E) else Color.White.copy(alpha = 0.65f)
+
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 when (state) {
                     ReflexState.IDLE -> {
                         Text(
                             text = "TAP TO",
-                            color = Color.White.copy(alpha = 0.65f),
+                            color = gameSubtle,
                             fontSize = 13.sp,
                             letterSpacing = 3.sp
                         )
@@ -525,7 +536,7 @@ private fun ReflexCoreGame() {
                     ReflexState.FROSTED_WAITING -> {
                         Text(
                             text = "HOLD...",
-                            color = Color.White,
+                            color = gameText,
                             fontSize = 24.sp,
                             fontWeight = FontWeight.Medium,
                             letterSpacing = 3.sp
@@ -533,7 +544,7 @@ private fun ReflexCoreGame() {
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
                             text = "WAIT FOR FROST TO CLEAR",
-                            color = Color.White.copy(alpha = 0.7f),
+                            color = gameSubtle,
                             fontSize = 10.sp,
                             letterSpacing = 1.8.sp
                         )
@@ -548,7 +559,7 @@ private fun ReflexCoreGame() {
                         )
                         Text(
                             text = "FROST CLEARED",
-                            color = Color.White,
+                            color = gameText,
                             fontSize = 11.sp,
                             letterSpacing = 2.sp
                         )
@@ -564,7 +575,7 @@ private fun ReflexCoreGame() {
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = "FROST HAD NOT SHIFTED",
-                            color = Color.White.copy(alpha = 0.7f),
+                            color = gameSubtle,
                             fontSize = 10.sp,
                             letterSpacing = 1.5.sp
                         )
@@ -578,7 +589,7 @@ private fun ReflexCoreGame() {
                         )
                         Text(
                             text = "MILLISECONDS",
-                            color = Color.White.copy(alpha = 0.65f),
+                            color = gameSubtle,
                             fontSize = 12.sp,
                             letterSpacing = 3.sp
                         )
@@ -1117,9 +1128,10 @@ private fun Fluid2048Tile(
             ),
         contentAlignment = Alignment.Center
     ) {
+        val isLight = com.example.ui.glass.LocalAmbientTheme.current.isLight
         Text(
             text = "${tile.value}",
-            color = if (tile.value >= 4) GoldAccent else Color.White,
+            color = if (tile.value >= 4) GoldAccent else (if (isLight) Color(0xFF1E2A20) else Color.White),
             fontSize = if (tile.value >= 1024) 18.sp else if (tile.value >= 128) 20.sp else 24.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.scale(numberScale.value)
@@ -1356,13 +1368,14 @@ private fun BubbleBurstGame() {
 // ============================================================================
 @Composable
 private fun GameHeaderTitle(firstWord: String, secondWord: String) {
+    val isLight = com.example.ui.glass.LocalAmbientTheme.current.isLight
     Row(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = firstWord,
-            color = Color.White,
+            color = if (isLight) Color(0xFF1E2A20) else Color.White,
             fontSize = 30.sp,
             fontWeight = FontWeight.Light,
             letterSpacing = 1.5.sp
@@ -1380,10 +1393,11 @@ private fun GameHeaderTitle(firstWord: String, secondWord: String) {
 
 @Composable
 private fun StatLabel(label: String, value: String) {
+    val isLight = com.example.ui.glass.LocalAmbientTheme.current.isLight
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = "$label  ",
-            color = Color.White.copy(alpha = 0.55f),
+            color = if (isLight) Color(0xFF3B503E) else Color.White.copy(alpha = 0.55f),
             fontSize = 10.sp,
             letterSpacing = 1.5.sp
         )
@@ -1402,6 +1416,7 @@ private fun GlassActionButton(
     text: String,
     onClick: () -> Unit
 ) {
+    val isLight = com.example.ui.glass.LocalAmbientTheme.current.isLight
     val shape = RoundedCornerShape(14.dp)
     Box(
         modifier = Modifier
@@ -1415,12 +1430,12 @@ private fun GlassActionButton(
             .background(
                 Brush.linearGradient(
                     colors = listOf(
-                        Color.White.copy(alpha = 0.12f),
-                        Color.White.copy(alpha = 0.04f)
+                        if (isLight) Color(0xFF2C3E2B).copy(alpha = 0.12f) else Color.White.copy(alpha = 0.12f),
+                        if (isLight) Color(0xFF2C3E2B).copy(alpha = 0.05f) else Color.White.copy(alpha = 0.04f)
                     )
                 )
             )
-            .border(0.8.dp, Color.White.copy(alpha = 0.18f), shape)
+            .border(0.8.dp, if (isLight) Color(0xFF2C3E2B).copy(alpha = 0.35f) else Color.White.copy(alpha = 0.18f), shape)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = ripple(color = Color.White.copy(alpha = 0.25f)),
@@ -1431,7 +1446,7 @@ private fun GlassActionButton(
     ) {
         Text(
             text = text,
-            color = Color.White.copy(alpha = 0.9f),
+            color = if (isLight) Color(0xFF1E2A20) else Color.White.copy(alpha = 0.9f),
             fontSize = 11.sp,
             letterSpacing = 2.5.sp,
             textAlign = TextAlign.Center

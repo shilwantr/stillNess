@@ -63,6 +63,7 @@ import androidx.compose.ui.unit.sp
 import com.example.data.local.entities.JournalEntryEntity
 import com.example.ui.components.InteractiveBarGraph
 import com.example.ui.glass.GlassCard
+import com.example.ui.glass.isLight
 import com.example.ui.theme.BlueDroplet
 import com.example.ui.theme.CyanBright
 import com.example.ui.theme.FrostedGlassBorder
@@ -115,6 +116,12 @@ fun JournalScreen(
         Pair("Anxious", PinkGlow)
     )
 
+    val isLight = com.example.ui.glass.LocalAmbientTheme.current.isLight
+    val textColor = if (isLight) Color(0xFF1E2A20) else TextWhite
+    val textSubtle = if (isLight) Color(0xFF3B503E) else Color.White.copy(alpha = 0.65f)
+    val glassBg = if (isLight) Color(0xFF1B2A1D).copy(alpha = 0.08f) else Color.White.copy(alpha = 0.10f)
+    val glassBorder = if (isLight) androidx.compose.ui.graphics.SolidColor(Color(0xFF2C3E2B).copy(alpha = 0.28f)) else FrostedGlassBorder
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -138,7 +145,7 @@ fun JournalScreen(
                 Column {
                     Text(
                         text = "J O U R N A L",
-                        color = TextWhite,
+                        color = textColor,
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Light,
                         letterSpacing = 6.sp
@@ -146,7 +153,7 @@ fun JournalScreen(
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = "Reflections, Steps & Hydration Log",
-                        color = Color.White.copy(alpha = 0.65f),
+                        color = textSubtle,
                         fontSize = 12.sp
                     )
                 }
@@ -154,8 +161,8 @@ fun JournalScreen(
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(16.dp))
-                        .background(Color.White.copy(alpha = 0.10f))
-                        .border(0.8.dp, FrostedGlassBorder, RoundedCornerShape(16.dp))
+                        .background(glassBg)
+                        .border(0.8.dp, glassBorder, RoundedCornerShape(16.dp))
                         .padding(horizontal = 10.dp, vertical = 6.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -168,7 +175,7 @@ fun JournalScreen(
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = todayFormatted,
-                            color = Color.White.copy(alpha = 0.85f),
+                            color = textColor,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Medium
                         )
