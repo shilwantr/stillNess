@@ -34,6 +34,8 @@ import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.sin
 
+import androidx.compose.runtime.staticCompositionLocalOf
+
 // Ambient Theme choices for the Living Liquid Glass backdrop.
 // Optimized for low-end CPU and GPU devices:
 // 1. Single master infinite transition float per canvas minimizes animation state evaluations.
@@ -46,8 +48,23 @@ enum class AmbientTheme(val label: String, val subtitle: String) {
     FERRIS_WHEEL("FW", "Celestial Bubbles: Rising liquid glass bubbles with sun, moon & 2D clouds"),
     TIME_DYNAMIC("TD", "Time Dynamic: Adaptive morning, afternoon & evening fluted glass waves"),
     LOOPING_TRIOS("LT", "Looping Trios: Pure black high-contrast kinetic geometry"),
-    RESONANCE_TUNNEL("RT", "Resonance Tunnel: Hypnotic infinite ribbed obsidian vortex")
+    RESONANCE_TUNNEL("RT", "Resonance Tunnel: Hypnotic infinite ribbed obsidian vortex"),
+    CLEAN_WHITE("CW", "Clean White: Minimalist soft porcelain white with dark olive accents")
 }
+
+val AmbientTheme.isLight: Boolean
+    get() = this == AmbientTheme.CLEAN_WHITE
+
+val LocalAmbientTheme = staticCompositionLocalOf { AmbientTheme.AURORA_SILK }
+
+val AmbientTheme.primaryTextColor: Color
+    get() = if (isLight) Color(0xFF1E2A20) else Color.White
+
+val AmbientTheme.secondaryTextColor: Color
+    get() = if (isLight) Color(0xFF3B503E) else Color.White.copy(alpha = 0.72f)
+
+val AmbientTheme.tertiaryTextColor: Color
+    get() = if (isLight) Color(0xFF5B7260) else Color.White.copy(alpha = 0.52f)
 
 // Three distinct time-of-day periods applied across all themes.
 enum class TimePeriod {
@@ -145,12 +162,14 @@ fun CosmicHorizonCanvas(
                 secondaryArcY = secondaryArcY
             )
             AmbientTheme.RESONANCE_TUNNEL -> drawResonanceTunnel(w, h, p1, pulse, period, sharedPath)
+            AmbientTheme.CLEAN_WHITE -> drawCleanWhite(w, h, p1, pulse, sharedPath)
             AmbientTheme.LOOPING_TRIOS -> Unit
         }
 
         if (theme != AmbientTheme.LOOPING_TRIOS &&
             theme != AmbientTheme.FERRIS_WHEEL &&
-            theme != AmbientTheme.RESONANCE_TUNNEL
+            theme != AmbientTheme.RESONANCE_TUNNEL &&
+            theme != AmbientTheme.CLEAN_WHITE
         ) {
             drawFloatingLightMotes(w, h, p1, p2, period)
         }
@@ -1378,6 +1397,56 @@ private fun DrawScope.drawStripedTriangleFast(
             end = Offset(endX, endY),
             strokeWidth = strokeW,
             cap = StrokeCap.Round
+        )
+    }
+}
+
+// Clean White Theme (CW / CLEAN_WHITE):
+// Minimalist soft porcelain white with dark olive silk wave accents.
+private fun DrawScope.drawCleanWhite(
+    w: Float,
+    h: Float,
+    p1: Float,
+    pulse: Float,
+    sharedPath: Path
+) {
+    // 1. Pristine soft porcelain white vertical gradient background
+    drawRect(
+        brush = Brush.verticalGradient(
+            colors = listOf(
+                Color(0xFFFFFFFF),
+                Color(0xFFF4F8F5),
+                Color(0xFFEBF0EC)
+            )
+        )
+    )
+
+    // 2. Soft subtle olive silk wave accent
+    val waveY = h * 0.42f + sin(p1) * 18f
+    sharedPath.reset()
+    sharedPath.moveTo(0f, waveY)
+    sharedPath.cubicTo(
+        w * 0.35f, waveY - 35f * pulse,
+        w * 0.65f, waveY + 35f * pulse,
+        w, waveY
+    )
+    sharedPath.lineTo(w, h)
+    sharedPath.lineTo(0f, h)
+    sharedPath.close()
+
+    drawPath(
+        path = sharedPath,
+        color = Color(0xFF384D3C).copy(alpha = 0.05f)
+    )
+
+    // 3. Gentle floating dark olive light motes
+    for (i in MOTE_X.indices) {
+        val mx = MOTE_X[i] * w
+        val my = (MOTE_Y[i] * h + sin(p1 + i) * 12f) % h
+        drawCircle(
+            color = Color(0xFF2C3E2B).copy(alpha = 0.06f),
+            radius = MOTE_R[i] * 2.2f,
+            center = Offset(mx, my)
         )
     }
 }

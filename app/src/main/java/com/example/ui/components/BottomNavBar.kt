@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import com.example.ui.glass.isLight
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
@@ -268,8 +269,15 @@ fun StillBottomNavBar(
                         label = "dotScale"
                     )
 
+                    val isLight = com.example.ui.glass.LocalAmbientTheme.current.isLight
+                    val targetTint = if (isSelected) {
+                        if (isLight) Color(0xFF1E2A20) else Color.White
+                    } else {
+                        if (isLight) Color(0xFF3B503E) else Color.White.copy(alpha = 0.65f)
+                    }
+
                     val tint by animateColorAsState(
-                        targetValue = if (isSelected) Color.White else Color.White.copy(alpha = 0.65f),
+                        targetValue = targetTint,
                         animationSpec = spring(stiffness = 90f),
                         label = "tabTint"
                     )

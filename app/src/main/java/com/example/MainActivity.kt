@@ -115,11 +115,14 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                CompositionLocalProvider(LocalLiquidState provides liquidState) {
+                CompositionLocalProvider(
+                    LocalLiquidState provides liquidState,
+                    com.example.ui.glass.LocalAmbientTheme provides ambientTheme
+                ) {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(MidnightDark)
+                            .background(if (ambientTheme == com.example.ui.glass.AmbientTheme.CLEAN_WHITE) androidx.compose.ui.graphics.Color(0xFFFCFDFC) else MidnightDark)
                     ) {
                         com.example.ui.glass.CosmicHorizonCanvas(
                             theme = ambientTheme,

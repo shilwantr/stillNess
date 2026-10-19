@@ -77,6 +77,7 @@ import com.example.ui.theme.GlassBorderActiveCyan
 import com.example.ui.theme.LiquidAzure
 import com.example.ui.theme.LiquidCobalt
 import com.example.ui.theme.OrangeFlame
+import com.example.ui.glass.isLight
 import com.example.ui.theme.PinkGlow
 import com.example.ui.theme.VioletBright
 import com.example.ui.viewmodel.WellnessViewModel
@@ -117,6 +118,13 @@ fun DashboardScreen(
     val upcomingCount = appointments.count { it.status == "UPCOMING" }
 
     val scrollState = rememberScrollState()
+    val ambientTheme by viewModel.ambientTheme.collectAsState()
+    val isLight = ambientTheme.isLight
+    val textColor = if (isLight) Color(0xFF1E2A20) else Color.White
+    val textSubtle = if (isLight) Color(0xFF3B503E) else Color.White.copy(alpha = 0.72f)
+    val textCaption = if (isLight) Color(0xFF5B7260) else Color.White.copy(alpha = 0.52f)
+    val glassBg = if (isLight) Color(0xFF1B2A1D).copy(alpha = 0.08f) else Color.White.copy(alpha = 0.14f)
+    val glassBorder = if (isLight) androidx.compose.ui.graphics.SolidColor(Color(0xFF2C3E2B).copy(alpha = 0.28f)) else FrostedGlassBorder
 
     androidx.activity.compose.BackHandler(enabled = showRobotDialog || showGamesDialog) {
         if (showGamesDialog) showGamesDialog = false
@@ -148,7 +156,7 @@ fun DashboardScreen(
                 Column {
                     Text(
                         text = "STILL",
-                        color = Color.White,
+                        color = textColor,
                         fontSize = 28.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 3.sp,
@@ -157,7 +165,7 @@ fun DashboardScreen(
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = "Mindful Presence & Daily Balance",
-                        color = Color.White.copy(alpha = 0.72f),
+                        color = textSubtle,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Normal
                     )
@@ -167,12 +175,11 @@ fun DashboardScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    val ambientTheme by viewModel.ambientTheme.collectAsState()
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(20.dp))
-                            .background(Color.White.copy(alpha = 0.14f))
-                            .border(1.dp, FrostedGlassBorder, RoundedCornerShape(20.dp))
+                            .background(glassBg)
+                            .border(1.dp, glassBorder, RoundedCornerShape(20.dp))
                             .clickable { viewModel.cycleAmbientTheme() }
                             .padding(horizontal = 11.dp, vertical = 7.dp),
                         contentAlignment = Alignment.Center
@@ -191,6 +198,7 @@ fun DashboardScreen(
                                 }
                                 com.example.ui.glass.AmbientTheme.LOOPING_TRIOS -> Color(0xFF283447)
                                 com.example.ui.glass.AmbientTheme.RESONANCE_TUNNEL -> Color(0xFF8A5CF5)
+                                com.example.ui.glass.AmbientTheme.CLEAN_WHITE -> Color(0xFF2C3E2B)
                             }
                             Box(
                                 modifier = Modifier
@@ -201,7 +209,7 @@ fun DashboardScreen(
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = ambientTheme.label,
-                                color = Color.White.copy(alpha = 0.92f),
+                                color = textColor,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Medium
                             )
@@ -307,7 +315,7 @@ fun DashboardScreen(
                         Column {
                             Text(
                                 text = "“${quote.text}”",
-                                color = Color.White,
+                                color = textColor,
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Medium,
                                 fontStyle = FontStyle.Italic,
@@ -321,7 +329,7 @@ fun DashboardScreen(
                             ) {
                                 Text(
                                     text = "— ${quote.author}",
-                                    color = Color.White.copy(alpha = 0.78f),
+                                    color = textSubtle,
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.SemiBold
                                 )
@@ -329,13 +337,13 @@ fun DashboardScreen(
                                     Icon(
                                         imageVector = Icons.Default.AutoAwesome,
                                         contentDescription = null,
-                                        tint = CyanBright.copy(alpha = 0.75f),
+                                        tint = if (isLight) Color(0xFF2C3E2B) else CyanBright.copy(alpha = 0.75f),
                                         modifier = Modifier.size(11.dp)
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text(
                                         text = "Rotates on open",
-                                        color = Color.White.copy(alpha = 0.52f),
+                                        color = textCaption,
                                         fontSize = 10.sp
                                     )
                                 }
@@ -372,7 +380,7 @@ fun DashboardScreen(
             // ================================================================
             Text(
                 text = "Daily Practices & Activity",
-                color = Color.White,
+                color = textColor,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
                 letterSpacing = (-0.2).sp
@@ -424,7 +432,7 @@ fun DashboardScreen(
                             Column {
                                 Text(
                                     text = "Glass Bubble Breathwork",
-                                    color = Color.White,
+                                    color = textColor,
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.SemiBold
                                 )
@@ -434,7 +442,7 @@ fun DashboardScreen(
                                     } else {
                                         "5 min guided rhythm • Restores calm"
                                     },
-                                    color = Color.White.copy(alpha = 0.68f),
+                                    color = textSubtle,
                                     fontSize = 11.sp
                                 )
                             }
@@ -442,7 +450,7 @@ fun DashboardScreen(
 
                         Text(
                             text = "Breathe",
-                            color = CyanBright,
+                            color = if (isLight) Color(0xFF2C3E2B) else CyanBright,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -492,13 +500,13 @@ fun DashboardScreen(
                             Column {
                                 Text(
                                     text = "Hydration Intake",
-                                    color = Color.White,
+                                    color = textColor,
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.SemiBold
                                 )
                                 Text(
                                     text = "${(waterMl / 1000f).formatOne()} / ${(waterGoalMl / 1000f).formatOne()} Litres (${(waterMl * 100 / waterGoalMl.coerceAtLeast(1))}%)",
-                                    color = Color.White.copy(alpha = 0.68f),
+                                    color = textSubtle,
                                     fontSize = 11.sp
                                 )
                             }
@@ -506,7 +514,7 @@ fun DashboardScreen(
 
                         Text(
                             text = "+ Log",
-                            color = CyanBright,
+                            color = if (isLight) Color(0xFF2C3E2B) else CyanBright,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -556,13 +564,13 @@ fun DashboardScreen(
                             Column {
                                 Text(
                                     text = "Walking Activity",
-                                    color = Color.White,
+                                    color = textColor,
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.SemiBold
                                 )
                                 Text(
                                     text = "%,d / %,d steps • %d kcal".format(currentSteps, stepGoal, activeBurn),
-                                    color = Color.White.copy(alpha = 0.68f),
+                                    color = textSubtle,
                                     fontSize = 11.sp
                                 )
                             }
