@@ -44,12 +44,9 @@ import kotlin.math.sin
 // 5. High contrast between foreground typography and background canvas.
 enum class AmbientTheme(val label: String, val subtitle: String) {
     // Core Dark Sanctuary Themes
-    AURORA_SILK("NT", "Olive Twilight: Deep obsidian olive, moss sage & muted earth silk"),
     MIDNIGHT_SAGE("MS", "Midnight Sage: Deep forest slate, eucalyptus & warm sand sanctuary"),
     COSMIC_DUSK("CD", "Cosmic Dusk: Deep violet, plum purple & warm amber horizon"),
     OCEAN_ABYSS("OA", "Ocean Abyss: Rising dawn horizon, deep cyan & navy depths"),
-    FOREST_RAIN("FR", "Forest Rain: Misty canopy lake, gentle rain streaks & rippling water"),
-    BIOLUMINESCENT_WAKE("BW", "Bioluminescent Wake: Minimalist boat with glowing cyan-blue Kelvin wake"),
     FERRIS_WHEEL("FW", "Celestial Bubbles: Rising liquid glass bubbles with sun, moon & 2D clouds"),
     TIME_DYNAMIC("TD", "Time Dynamic: Adaptive morning, afternoon & evening fluted glass waves"),
     LOOPING_TRIOS("LT", "Looping Trios: Pure black high-contrast kinetic geometry"),
@@ -57,25 +54,21 @@ enum class AmbientTheme(val label: String, val subtitle: String) {
 
     // Light Sanctuary Themes (isLight = true)
     CLEAN_WHITE("CW", "Clean White: Minimalist soft porcelain white with dark olive accents"),
-    WARM_LINEN("WL", "Warm Linen & Olive: Soft sunlit linen, olive grove & muted terracotta"),
     LIGHT_TOPOGRAPHY("TP", "Liquid Topography: Organic marble contour ribbons in soft stone & sage"),
     LIGHT_ZEN_RIPPLES("ZR", "Zen Sand Ripples: Interlocking concentric Seigaiha wave medallions"),
-    LIGHT_HALFTONE_WAVE("HW", "Halftone Silk Wave: 3D undulating dot-matrix topography"),
-    LIGHT_QUILTED_LATTICE("QL", "Quilted Lattice: Soft 3D embossed architectural diamond tiles")
+    LIGHT_HALFTONE_WAVE("HW", "Halftone Silk Wave: 3D undulating dot-matrix topography")
 }
 
 val AmbientTheme.isLight: Boolean
     get() = when (this) {
         AmbientTheme.CLEAN_WHITE,
-        AmbientTheme.WARM_LINEN,
         AmbientTheme.LIGHT_TOPOGRAPHY,
         AmbientTheme.LIGHT_ZEN_RIPPLES,
-        AmbientTheme.LIGHT_HALFTONE_WAVE,
-        AmbientTheme.LIGHT_QUILTED_LATTICE -> true
+        AmbientTheme.LIGHT_HALFTONE_WAVE -> true
         else -> false
     }
 
-val LocalAmbientTheme = staticCompositionLocalOf { AmbientTheme.AURORA_SILK }
+val LocalAmbientTheme = staticCompositionLocalOf { AmbientTheme.MIDNIGHT_SAGE }
 
 val AmbientTheme.primaryTextColor: Color
     get() = if (isLight) Color(0xFF1E2A20) else Color.White
@@ -137,7 +130,7 @@ private val ZEN_DISC_SCALE = floatArrayOf(0.46f, 0.44f, 0.50f, 0.45f, 0.46f, 0.5
 @Composable
 fun CosmicHorizonCanvas(
     modifier: Modifier = Modifier,
-    theme: AmbientTheme = AmbientTheme.AURORA_SILK,
+    theme: AmbientTheme = AmbientTheme.MIDNIGHT_SAGE,
     hourOverride: Int? = null
 ) {
     if (theme == AmbientTheme.LOOPING_TRIOS) {
@@ -173,13 +166,9 @@ fun CosmicHorizonCanvas(
         val pulse = 0.92f + 0.08f * sin(masterPhase * 3f)
 
         when (theme) {
-            AmbientTheme.AURORA_SILK -> drawNordicTwilight(w, h, p1, p2, pulse, period, sharedPath)
             AmbientTheme.MIDNIGHT_SAGE -> drawMidnightSage(w, h, p1, p2, pulse, period, sharedPath)
-            AmbientTheme.WARM_LINEN -> drawWarmLinen(w, h, p1, p2, pulse, period, sharedPath)
             AmbientTheme.COSMIC_DUSK -> drawCosmicDusk(w, h, p1, p2, pulse, period, sharedPath)
             AmbientTheme.OCEAN_ABYSS -> drawOceanAbyss(w, h, p1, p2, pulse, period, sharedPath)
-            AmbientTheme.FOREST_RAIN -> drawForestRain(w, h, p1, p2, pulse, sharedPath)
-            AmbientTheme.BIOLUMINESCENT_WAKE -> drawBioluminescentWake(w, h, p1, p2, pulse, sharedPath)
             AmbientTheme.FERRIS_WHEEL -> drawFerrisWheel(w, h, p1, p2, pulse, period, sharedPath)
             AmbientTheme.TIME_DYNAMIC -> drawTimeDynamic(
                 w = w,
@@ -197,12 +186,10 @@ fun CosmicHorizonCanvas(
             AmbientTheme.LIGHT_TOPOGRAPHY -> drawLightTopography(w, h, p1, p2, pulse, period, sharedPath)
             AmbientTheme.LIGHT_ZEN_RIPPLES -> drawLightZenRipples(w, h, p1, p2, period)
             AmbientTheme.LIGHT_HALFTONE_WAVE -> drawLightHalftoneWave(w, h, p1, p2, period)
-            AmbientTheme.LIGHT_QUILTED_LATTICE -> drawLightQuiltedLattice(w, h, p1, period, sharedPath)
             AmbientTheme.LOOPING_TRIOS -> Unit
         }
 
-        if (theme == AmbientTheme.AURORA_SILK ||
-            theme == AmbientTheme.MIDNIGHT_SAGE ||
+        if (theme == AmbientTheme.MIDNIGHT_SAGE ||
             theme == AmbientTheme.COSMIC_DUSK ||
             theme == AmbientTheme.OCEAN_ABYSS ||
             theme == AmbientTheme.TIME_DYNAMIC

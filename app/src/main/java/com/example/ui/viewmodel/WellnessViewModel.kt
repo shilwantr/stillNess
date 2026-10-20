@@ -124,8 +124,8 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
     private val _selectedMood = MutableStateFlow(MoodState.CALM)
     val selectedMood: StateFlow<MoodState> = _selectedMood.asStateFlow()
 
-    // Ambient Background Theme (NT / AURORA_SILK as initial theme)
-    private val _ambientTheme = MutableStateFlow(com.example.ui.glass.AmbientTheme.AURORA_SILK)
+    // Ambient Background Theme (MS / MIDNIGHT_SAGE as initial theme)
+    private val _ambientTheme = MutableStateFlow(com.example.ui.glass.AmbientTheme.MIDNIGHT_SAGE)
     val ambientTheme: StateFlow<com.example.ui.glass.AmbientTheme> = _ambientTheme.asStateFlow()
 
     fun setAmbientTheme(theme: com.example.ui.glass.AmbientTheme) {

@@ -186,12 +186,9 @@ fun DashboardScreen(
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             val dotColor = when (ambientTheme) {
-                                com.example.ui.glass.AmbientTheme.AURORA_SILK -> Color(0xFF7C98B3)
                                 com.example.ui.glass.AmbientTheme.MIDNIGHT_SAGE -> Color(0xFF8FA89B)
                                 com.example.ui.glass.AmbientTheme.COSMIC_DUSK -> Color(0xFF9D6BFF)
                                 com.example.ui.glass.AmbientTheme.OCEAN_ABYSS -> Color(0xFF38BDF8)
-                                com.example.ui.glass.AmbientTheme.FOREST_RAIN -> Color(0xFF34D399)
-                                com.example.ui.glass.AmbientTheme.BIOLUMINESCENT_WAKE -> Color(0xFF22D3EE)
                                 com.example.ui.glass.AmbientTheme.FERRIS_WHEEL -> Color(0xFFE4E4E7)
                                 com.example.ui.glass.AmbientTheme.TIME_DYNAMIC -> {
                                     val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
@@ -204,11 +201,9 @@ fun DashboardScreen(
                                 com.example.ui.glass.AmbientTheme.LOOPING_TRIOS -> Color(0xFF283447)
                                 com.example.ui.glass.AmbientTheme.RESONANCE_TUNNEL -> Color(0xFF8A5CF5)
                                 com.example.ui.glass.AmbientTheme.CLEAN_WHITE -> Color(0xFF2C3E2B)
-                                com.example.ui.glass.AmbientTheme.WARM_LINEN -> Color(0xFF8C6D53)
                                 com.example.ui.glass.AmbientTheme.LIGHT_TOPOGRAPHY -> Color(0xFF4A6B53)
                                 com.example.ui.glass.AmbientTheme.LIGHT_ZEN_RIPPLES -> Color(0xFF3A5A78)
                                 com.example.ui.glass.AmbientTheme.LIGHT_HALFTONE_WAVE -> Color(0xFF6B5A78)
-                                com.example.ui.glass.AmbientTheme.LIGHT_QUILTED_LATTICE -> Color(0xFF4B6050)
                             }
                             Box(
                                 modifier = Modifier
