@@ -6,7 +6,7 @@ object AgoraConfig {
      * Testing Mode (recommended for dev): Create an Agora project with "Testing mode: App ID without token".
      * Paste your App ID below or provide via .env.
      */
-    var AGORA_APP_ID: String = "YOUR_AGORA_APP_ID"
+    var AGORA_APP_ID: String = "472c1d584d584e8e9a33daf9d5723615"
 
     val isConfigured: Boolean
         get() = AGORA_APP_ID.isNotBlank() &&
