@@ -107,16 +107,19 @@ class MainActivity : ComponentActivity() {
                 val callState by viewModel.callState.collectAsState()
                 val isEmoScreenOpen by viewModel.isEmoScreenOpen.collectAsState()
                 val isProfileScreenOpen by viewModel.isProfileScreenOpen.collectAsState()
+                val isSleepFullScreen by viewModel.isSleepFullScreen.collectAsState()
                 val ambientTheme by viewModel.ambientTheme.collectAsState()
                 val liquidState = rememberLiquidState()
 
-                BackHandler(enabled = callState.isActive || isEmoScreenOpen || isProfileScreenOpen || currentTab != StillTab.TODAY) {
+                BackHandler(enabled = callState.isActive || isEmoScreenOpen || isProfileScreenOpen || isSleepFullScreen || currentTab != StillTab.TODAY) {
                     if (callState.isActive) {
                         viewModel.endCall()
                     } else if (isEmoScreenOpen) {
                         viewModel.setEmoScreenOpen(false)
                     } else if (isProfileScreenOpen) {
                         viewModel.setProfileScreenOpen(false)
+                    } else if (isSleepFullScreen) {
+                        viewModel.setSleepFullScreen(false)
                     } else {
                         viewModel.setTab(StillTab.TODAY)
                     }
@@ -161,6 +164,11 @@ class MainActivity : ComponentActivity() {
                                     )
                                 }
                             }
+                        } else if (isSleepFullScreen) {
+                            com.example.ui.animations.AmbientNatureAnimationsSection(
+                                modifier = Modifier.fillMaxSize(),
+                                onBackClick = { viewModel.setSleepFullScreen(false) }
+                            )
                         } else {
                             Scaffold(
                                 containerColor = Color.Transparent,

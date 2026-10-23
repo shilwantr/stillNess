@@ -128,6 +128,14 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
         _isProfileScreenOpen.value = isOpen
     }
 
+    // Sleep Full Screen Animation State
+    private val _isSleepFullScreen = MutableStateFlow(false)
+    val isSleepFullScreen: StateFlow<Boolean> = _isSleepFullScreen.asStateFlow()
+
+    fun setSleepFullScreen(isOpen: Boolean) {
+        _isSleepFullScreen.value = isOpen
+    }
+
     // Daily Mood State
     private val _selectedMood = MutableStateFlow(MoodState.CALM)
     val selectedMood: StateFlow<MoodState> = _selectedMood.asStateFlow()
