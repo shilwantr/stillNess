@@ -42,6 +42,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -85,7 +86,8 @@ import com.example.ui.viewmodel.WellnessViewModel
 
 enum class PracticeMainMode(val label: String) {
     BREATHE("Breathe"),
-    HEAL("Heal")
+    HEAL("Heal"),
+    SLEEP("Sleep")
 }
 
 enum class BreatheTab(val label: String) {
@@ -99,9 +101,9 @@ fun BreatheScreen(
     viewModel: WellnessViewModel,
     modifier: Modifier = Modifier
 ) {
-    val pagerState = rememberPagerState(pageCount = { PracticeMainMode.values().size })
+    val pagerState = rememberPagerState(pageCount = { PracticeMainMode.entries.size })
     val coroutineScope = rememberCoroutineScope()
-    val practiceMainMode = PracticeMainMode.values()[pagerState.currentPage]
+    val practiceMainMode = PracticeMainMode.entries[pagerState.currentPage]
     var subTab by remember { mutableStateOf(BreatheTab.RELAXING) }
     var currentVisualStyle by remember { mutableStateOf(GlassStyle.BALLOON) }
 
@@ -130,97 +132,145 @@ fun BreatheScreen(
             .testTag("breathe_screen")
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .padding(top = 8.dp)
+            modifier = Modifier.fillMaxSize()
         ) {
-            // Header Row with Side-by-Side Mode Switcher (Breathe | Heal)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = if (practiceMainMode == PracticeMainMode.BREATHE) "BREATHE" else "HEAL",
-                    color = TextWhite,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Light,
-                    letterSpacing = 4.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false)
-                )
-
-                Spacer(modifier = Modifier.width(6.dp))
-
-                // Side-by-Side Practice Mode Switcher
+            if (practiceMainMode != PracticeMainMode.SLEEP) {
+                // Header Row with Side-by-Side Mode Switcher (Breathe | Heal | Sleep)
                 Row(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(22.dp))
-                        .background(Color.White.copy(alpha = 0.10f))
-                        .border(0.8.dp, FrostedGlassBorder, RoundedCornerShape(22.dp))
-                        .padding(3.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    PracticeMainMode.values().forEach { mode ->
-                        val isSel = mode == practiceMainMode
-                        val bgBrush = if (isSel) {
-                            Brush.horizontalGradient(
-                                listOf(
-                                    LiquidCobalt.copy(alpha = 0.55f),
-                                    CyanGlow.copy(alpha = 0.35f)
+                    Text(
+                        text = when (practiceMainMode) {
+                            PracticeMainMode.BREATHE -> "BREATHE"
+                            PracticeMainMode.HEAL -> "HEAL"
+                            PracticeMainMode.SLEEP -> "SLEEP"
+                        },
+                        color = TextWhite,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Light,
+                        letterSpacing = 4.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+
+                    Spacer(modifier = Modifier.width(6.dp))
+
+                    // Side-by-Side Practice Mode Switcher
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(22.dp))
+                            .background(Color.White.copy(alpha = 0.10f))
+                            .border(0.8.dp, FrostedGlassBorder, RoundedCornerShape(22.dp))
+                            .padding(3.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        PracticeMainMode.entries.forEach { mode ->
+                            val isSel = mode == practiceMainMode
+                            val bgBrush = if (isSel) {
+                                Brush.horizontalGradient(
+                                    listOf(
+                                        LiquidCobalt.copy(alpha = 0.55f),
+                                        CyanGlow.copy(alpha = 0.35f)
+                                    )
                                 )
-                            )
-                        } else {
-                            Brush.horizontalGradient(listOf(Color.Transparent, Color.Transparent))
-                        }
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(18.dp))
-                                .background(bgBrush)
-                                .border(
-                                    0.8.dp,
-                                    if (isSel) GlassBorderActiveCyan else SolidColor(Color.Transparent),
-                                    RoundedCornerShape(18.dp)
-                                )
-                                .clickable {
-                                    coroutineScope.launch {
-                                        pagerState.animateScrollToPage(mode.ordinal)
+                            } else {
+                                Brush.horizontalGradient(listOf(Color.Transparent, Color.Transparent))
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(18.dp))
+                                    .background(bgBrush)
+                                    .border(
+                                        0.8.dp,
+                                        if (isSel) GlassBorderActiveCyan else SolidColor(Color.Transparent),
+                                        RoundedCornerShape(18.dp)
+                                    )
+                                    .clickable {
+                                        coroutineScope.launch {
+                                            pagerState.animateScrollToPage(mode.ordinal)
+                                        }
                                     }
-                                }
-                                .padding(horizontal = 12.dp, vertical = 6.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = mode.label,
-                                color = if (isSel) TextWhite else Color.White.copy(alpha = 0.65f),
-                                fontSize = 12.sp,
-                                fontWeight = if (isSel) FontWeight.Bold else FontWeight.Medium,
-                                maxLines = 1,
-                                softWrap = false
-                            )
+                                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = mode.label,
+                                    color = if (isSel) TextWhite else Color.White.copy(alpha = 0.65f),
+                                    fontSize = 12.sp,
+                                    fontWeight = if (isSel) FontWeight.Bold else FontWeight.Medium,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                            }
                         }
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(8.dp))
+            }
 
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize()
             ) { page ->
-                val currentPageMode = PracticeMainMode.values()[page]
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 20.dp)
-                ) {
-                    if (currentPageMode == PracticeMainMode.BREATHE) {
+                val currentPageMode = PracticeMainMode.entries[page]
+                LaunchedEffect(currentPageMode) {
+                    if (currentPageMode == PracticeMainMode.SLEEP) {
+                        viewModel.setSleepFullScreen(true)
+                    }
+                }
+
+                if (currentPageMode == PracticeMainMode.SLEEP) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 20.dp, vertical = 20.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        GlassCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            cornerRadius = 28.dp,
+                            onClick = { viewModel.setSleepFullScreen(true) }
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Text(
+                                    text = "Sleep Nature Sanctuary",
+                                    color = TextWhite,
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = "Tap to expand edge-to-edge fullscreen ambient animations",
+                                    color = TextMuted,
+                                    fontSize = 12.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                                GlassButton(
+                                    text = "Expand Fullscreen ⤢",
+                                    onClick = { viewModel.setSleepFullScreen(true) },
+                                    isActive = true
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = 20.dp)
+                    ) {
+                        if (currentPageMode == PracticeMainMode.BREATHE) {
                 // 1. Signature 3D Liquid Glass Bubble Hero Card
                 GlassCard(
                     modifier = Modifier
@@ -1043,13 +1093,14 @@ fun BreatheScreen(
                     }
                 }
             }
-            } // Closes else (PracticeMainMode.HEAL)
 
-                    Spacer(modifier = Modifier.height(92.dp))
-                }
-            }
+            Spacer(modifier = Modifier.height(92.dp))
         }
     }
+}
+}
+}
+}
 }
 
 @Composable

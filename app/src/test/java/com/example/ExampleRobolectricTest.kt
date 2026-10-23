@@ -33,7 +33,7 @@ class ExampleRobolectricTest {
     org.junit.Assert.assertEquals("Sun", points.last().label)
 
     org.junit.Assert.assertEquals(
-        com.example.ui.glass.AmbientTheme.AURORA_SILK,
+        com.example.ui.glass.AmbientTheme.MIDNIGHT_SAGE,
         viewModel.ambientTheme.value
     )
   }

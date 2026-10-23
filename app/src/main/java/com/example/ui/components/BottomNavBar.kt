@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import com.example.ui.glass.isLight
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
@@ -51,6 +52,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.filled.Gamepad
 import com.example.ui.glass.LocalLiquidState
 import com.example.ui.glass.liquidGlassCardShader
 import com.example.ui.theme.CyanBright
@@ -64,7 +66,7 @@ enum class StillTab(val title: String, val icon: ImageVector, val tag: String) {
     BREATHE("Practice", Icons.Default.SelfImprovement, "nav_tab_breathe"),
     TRENDS("Journal", Icons.Default.EditNote, "nav_tab_trends"),
     THERAPISTS("Therapy", Icons.Default.SupportAgent, "nav_tab_therapists"),
-    PROFILE("Profile", Icons.Default.Person, "nav_tab_profile")
+    GAMES("Play", Icons.Default.Gamepad, "nav_tab_games")
 }
 
 @Composable
@@ -268,8 +270,15 @@ fun StillBottomNavBar(
                         label = "dotScale"
                     )
 
+                    val isLight = com.example.ui.glass.LocalAmbientTheme.current.isLight
+                    val targetTint = if (isSelected) {
+                        if (isLight) Color(0xFF1E2A20) else Color.White
+                    } else {
+                        if (isLight) Color(0xFF3B503E) else Color.White.copy(alpha = 0.65f)
+                    }
+
                     val tint by animateColorAsState(
-                        targetValue = if (isSelected) Color.White else Color.White.copy(alpha = 0.65f),
+                        targetValue = targetTint,
                         animationSpec = spring(stiffness = 90f),
                         label = "tabTint"
                     )

@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import com.example.ui.glass.isLight
 import android.os.SystemClock
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
@@ -7,7 +8,6 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
@@ -21,7 +21,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -45,6 +45,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -65,10 +66,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.zIndex
 import androidx.compose.ui.layout.boundsInParent
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -80,6 +79,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import com.example.ui.glass.LocalLiquidState
 import com.example.ui.glass.liquidGlassCardShader
 import com.example.ui.theme.CyanBright
@@ -89,6 +89,7 @@ import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -101,10 +102,6 @@ enum class StillMiniGame(val tabTitle: String) {
     BURST("BURST")
 }
 
-/**
- * Shared helper that applies real AGSL liquid-glass refraction, frost, curvature,
- * and dispersion when LocalLiquidState is available, with shader fallback.
- */
 @Composable
 private fun Modifier.liquidGlassEffect(
     shape: Shape,
@@ -150,13 +147,11 @@ fun StillGamesScreen(
             .padding(horizontal = 18.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // 1. TOP ROW: 3-Segment Liquid Glass Game Switcher (REFLEX | 2048 | BURST)
         StillGameTopBar(
             selectedGame = selectedGame,
             onGameSelected = { selectedGame = it }
         )
 
-        // 2. MAIN ARENA: Full-Height Liquid Glass Container
         val arenaShape = RoundedCornerShape(34.dp)
         Box(
             modifier = Modifier
@@ -201,7 +196,7 @@ fun StillGamesScreen(
 }
 
 // ============================================================================
-// TOP SEGMENTED LIQUID GLASS BAR (REFLEX | 2048 | BURST)
+// TOP SEGMENTED LIQUID GLASS BAR
 // ============================================================================
 @Composable
 private fun StillGameTopBar(
@@ -227,13 +222,13 @@ private fun StillGameTopBar(
             if (movingRight) {
                 launch { bubbleRight.animateTo(targetRect.right, spec) }
                 launch {
-                    delay(65)
+                    delay(65.milliseconds)
                     bubbleLeft.animateTo(targetRect.left, spec)
                 }
             } else {
                 launch { bubbleLeft.animateTo(targetRect.left, spec) }
                 launch {
-                    delay(65)
+                    delay(65.milliseconds)
                     bubbleRight.animateTo(targetRect.right, spec)
                 }
             }
@@ -264,7 +259,6 @@ private fun StillGameTopBar(
             .padding(6.dp),
         contentAlignment = Alignment.TopStart
     ) {
-        // Fluid Droplet Active Indicator
         if (targetRect != null && isInitialized.value) {
             Box(
                 modifier = Modifier
@@ -319,8 +313,14 @@ private fun StillGameTopBar(
                     animationSpec = spring(dampingRatio = 0.55f, stiffness = 80f),
                     label = "topTabScale"
                 )
+                val isLight = com.example.ui.glass.LocalAmbientTheme.current.isLight
+                val targetColor = if (isSelected) {
+                    if (isLight) Color(0xFF1E2A20) else Color.White
+                } else {
+                    if (isLight) Color(0xFF3B503E) else Color.White.copy(alpha = 0.6f)
+                }
                 val textColor by animateColorAsState(
-                    targetValue = if (isSelected) Color.White else Color.White.copy(alpha = 0.6f),
+                    targetValue = targetColor,
                     label = "topTabColor"
                 )
 
@@ -352,7 +352,7 @@ private fun StillGameTopBar(
 }
 
 // ============================================================================
-// GAME 1: REFLEX CORE (FROST SHIFT REACTION GAME)
+// GAME 1: REFLEX CORE
 // ============================================================================
 private enum class ReflexState {
     IDLE,
@@ -371,11 +371,10 @@ private fun ReflexCoreGame() {
     var clearTimestamp by remember { mutableLongStateOf(0L) }
     var roundKey by remember { mutableIntStateOf(0) }
 
-    // Trigger random frost-to-clear transition when waiting
     LaunchedEffect(state, roundKey) {
         if (state == ReflexState.FROSTED_WAITING) {
             val waitTime = Random.nextLong(1600L, 4200L)
-            delay(waitTime)
+            delay(waitTime.milliseconds)
             if (state == ReflexState.FROSTED_WAITING) {
                 clearTimestamp = SystemClock.elapsedRealtime()
                 state = ReflexState.CLEAR_TAP_NOW
@@ -383,7 +382,6 @@ private fun ReflexCoreGame() {
         }
     }
 
-    // Continuous fluid breathing wobble
     val infiniteTransition = rememberInfiniteTransition(label = "reflexBreathing")
     val breath by infiniteTransition.animateFloat(
         initialValue = -0.025f,
@@ -395,7 +393,6 @@ private fun ReflexCoreGame() {
         label = "breath"
     )
 
-    // Animated optical frost & scale properties for the central liquid bubble
     val targetFrost = when (state) {
         ReflexState.FROSTED_WAITING -> 24f
         ReflexState.CLEAR_TAP_NOW -> 0f
@@ -404,7 +401,7 @@ private fun ReflexCoreGame() {
     val frostDp by animateFloatAsState(
         targetValue = targetFrost,
         animationSpec = if (state == ReflexState.CLEAR_TAP_NOW) {
-            spring(dampingRatio = 0.45f, stiffness = 380f) // Fast snap when frost clears!
+            spring(dampingRatio = 0.45f, stiffness = 380f)
         } else {
             spring(dampingRatio = 0.7f, stiffness = 80f)
         },
@@ -446,7 +443,6 @@ private fun ReflexCoreGame() {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // Header & Stats
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             GameHeaderTitle(firstWord = "REFLEX", secondWord = "CORE")
             Spacer(modifier = Modifier.height(14.dp))
@@ -460,7 +456,6 @@ private fun ReflexCoreGame() {
             }
         }
 
-        // Center Frost-Shifting Liquid Bubble
         Box(
             modifier = Modifier
                 .size(250.dp)
@@ -516,12 +511,16 @@ private fun ReflexCoreGame() {
                 ),
             contentAlignment = Alignment.Center
         ) {
+            val isLight = com.example.ui.glass.LocalAmbientTheme.current.isLight
+            val gameText = if (isLight) Color(0xFF1E2A20) else Color.White
+            val gameSubtle = if (isLight) Color(0xFF3B503E) else Color.White.copy(alpha = 0.65f)
+
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 when (state) {
                     ReflexState.IDLE -> {
                         Text(
                             text = "TAP TO",
-                            color = Color.White.copy(alpha = 0.65f),
+                            color = gameSubtle,
                             fontSize = 13.sp,
                             letterSpacing = 3.sp
                         )
@@ -537,7 +536,7 @@ private fun ReflexCoreGame() {
                     ReflexState.FROSTED_WAITING -> {
                         Text(
                             text = "HOLD...",
-                            color = Color.White,
+                            color = gameText,
                             fontSize = 24.sp,
                             fontWeight = FontWeight.Medium,
                             letterSpacing = 3.sp
@@ -545,7 +544,7 @@ private fun ReflexCoreGame() {
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
                             text = "WAIT FOR FROST TO CLEAR",
-                            color = Color.White.copy(alpha = 0.7f),
+                            color = gameSubtle,
                             fontSize = 10.sp,
                             letterSpacing = 1.8.sp
                         )
@@ -560,7 +559,7 @@ private fun ReflexCoreGame() {
                         )
                         Text(
                             text = "FROST CLEARED",
-                            color = Color.White,
+                            color = gameText,
                             fontSize = 11.sp,
                             letterSpacing = 2.sp
                         )
@@ -576,7 +575,7 @@ private fun ReflexCoreGame() {
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = "FROST HAD NOT SHIFTED",
-                            color = Color.White.copy(alpha = 0.7f),
+                            color = gameSubtle,
                             fontSize = 10.sp,
                             letterSpacing = 1.5.sp
                         )
@@ -590,7 +589,7 @@ private fun ReflexCoreGame() {
                         )
                         Text(
                             text = "MILLISECONDS",
-                            color = Color.White.copy(alpha = 0.65f),
+                            color = gameSubtle,
                             fontSize = 12.sp,
                             letterSpacing = 3.sp
                         )
@@ -599,7 +598,6 @@ private fun ReflexCoreGame() {
             }
         }
 
-        // Bottom Action Button
         GlassActionButton(
             text = "NEW ATTEMPT",
             onClick = {
@@ -611,7 +609,7 @@ private fun ReflexCoreGame() {
 }
 
 // ============================================================================
-// GAME 2: TILE SHIFT (2048 WITH SOFT-BODY MERGING FLUID TILES)
+// GAME 2: TILE SHIFT (COALESCENT LIQUID BUBBLES)
 // ============================================================================
 private data class FluidTileModel(
     val id: Int,
@@ -622,6 +620,7 @@ private data class FluidTileModel(
     val isDisappearing: Boolean = false
 )
 
+@Suppress("UnusedBoxWithConstraintsScope")
 @Composable
 private fun TileShift2048Game() {
     var nextTileId by remember { mutableIntStateOf(1) }
@@ -694,7 +693,8 @@ private fun TileShift2048Game() {
         lastSwipeAxis = Offset(dc.toFloat(), dr.toFloat())
         var moved = false
         var gainedScore = 0
-        val updatedTiles = mutableListOf<FluidTileModel>()
+        val intermediateTiles = mutableListOf<FluidTileModel>()
+        val mergesToApply = mutableMapOf<Int, Int>()
 
         for (i in 0..3) {
             val line = tiles
@@ -726,29 +726,21 @@ private fun TileShift2048Game() {
                         hasWon2048 = true
                     }
 
-                    // Primary merged tile slides into destination and bloops
-                    updatedTiles.add(
-                        current.copy(
-                            value = mergedVal,
-                            row = destRow,
-                            col = destCol,
-                            mergeTrigger = current.mergeTrigger + 1
-                        )
-                    )
-                    // Companion tile ALSO slides to destination, smoothly fading out as it collides
-                    updatedTiles.add(
+                    intermediateTiles.add(current.copy(row = destRow, col = destCol))
+                    intermediateTiles.add(
                         next.copy(
                             row = destRow,
                             col = destCol,
                             isDisappearing = true
                         )
                     )
+                    mergesToApply[current.id] = mergedVal
                     idx += 2
                 } else {
                     if (current.row != destRow || current.col != destCol) {
                         moved = true
                     }
-                    updatedTiles.add(current.copy(row = destRow, col = destCol))
+                    intermediateTiles.add(current.copy(row = destRow, col = destCol))
                     idx += 1
                 }
                 targetIndex++
@@ -758,13 +750,30 @@ private fun TileShift2048Game() {
         if (moved) {
             isSliding = true
             tiles.clear()
-            tiles.addAll(updatedTiles)
+            tiles.addAll(intermediateTiles)
             score += gainedScore
             if (score > bestScore) bestScore = score
 
             coroutineScope.launch {
-                delay(175)
-                tiles.removeAll { it.isDisappearing }
+                delay(165.milliseconds)
+                val finalTiles = mutableListOf<FluidTileModel>()
+                val activeTiles = tiles.filter { !it.isDisappearing }
+                for (tile in activeTiles) {
+                    val mergedVal = mergesToApply[tile.id]
+                    if (mergedVal != null) {
+                        finalTiles.add(
+                            tile.copy(
+                                value = mergedVal,
+                                mergeTrigger = tile.mergeTrigger + 1
+                            )
+                        )
+                    } else {
+                        finalTiles.add(tile)
+                    }
+                }
+                tiles.clear()
+                tiles.addAll(finalTiles)
+
                 spawnRandomTile(tiles)
                 isSliding = false
                 if (!canMove(tiles)) {
@@ -795,7 +804,6 @@ private fun TileShift2048Game() {
                                     val dx = totalDrag.x
                                     val dy = totalDrag.y
                                     if (abs(dx) >= flickThreshold || abs(dy) >= flickThreshold) {
-                                        swiped = true
                                         if (abs(dx) > abs(dy)) {
                                             slide(0, if (dx > 0) 1 else -1)
                                         } else {
@@ -829,7 +837,6 @@ private fun TileShift2048Game() {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // Header & Score Row
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             GameHeaderTitle(firstWord = "TILE", secondWord = "SHIFT")
             Spacer(modifier = Modifier.height(10.dp))
@@ -843,7 +850,6 @@ private fun TileShift2048Game() {
             }
         }
 
-        // 4x4 Fluid Glass Grid
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxWidth()
@@ -853,7 +859,6 @@ private fun TileShift2048Game() {
             val spacing = 10.dp
             val cellSize = (maxWidth - spacing * 3) / 4
 
-            // Background recessed glass slots
             for (r in 0..3) {
                 for (c in 0..3) {
                     Box(
@@ -874,7 +879,6 @@ private fun TileShift2048Game() {
                 }
             }
 
-            // Active Fluid Soft-Body Tiles
             tiles.forEach { tile ->
                 key(tile.id) {
                     Fluid2048Tile(
@@ -886,7 +890,6 @@ private fun TileShift2048Game() {
                 }
             }
 
-            // Game Over overlay
             if (isGameOver) {
                 Box(
                     modifier = Modifier
@@ -921,7 +924,6 @@ private fun TileShift2048Game() {
             }
         }
 
-        // Tactical Controls Row & Reset Button
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -979,17 +981,17 @@ private fun Fluid2048Tile(
     val targetX = stepPx * tile.col
     val targetY = stepPx * tile.row
 
-    // Soft-body spring position
     val xAnim = remember { Animatable(targetX) }
     val yAnim = remember { Animatable(targetY) }
 
-    // Soft-body squash/stretch & merge jelly oscillation
     val squishX = remember { Animatable(if (tile.isDisappearing) 1f else 0.6f) }
     val squishY = remember { Animatable(if (tile.isDisappearing) 1f else 0.6f) }
     val alphaAnim = remember { Animatable(if (tile.isDisappearing) 1f else 0f) }
-    val mergeRing = remember { Animatable(0f) }
+    val numberScale = remember { Animatable(1f) }
 
-    // Continuous subtle fluid wobble so every tile feels like a living droplet
+    val refractionAnim = remember { Animatable(0.28f) }
+    val dispersionAnim = remember { Animatable(if (tile.value >= 16) 0.07f else 0.04f) }
+
     val infinite = rememberInfiniteTransition(label = "tileWobble_${tile.id}")
     val idleWobble by infinite.animateFloat(
         initialValue = -0.018f,
@@ -1004,7 +1006,6 @@ private fun Fluid2048Tile(
         label = "wobble"
     )
 
-    // Pop-in droplet swell on spawn
     LaunchedEffect(Unit) {
         if (!tile.isDisappearing) {
             launch { alphaAnim.animateTo(1f, tween(140, easing = LinearEasing)) }
@@ -1013,14 +1014,14 @@ private fun Fluid2048Tile(
         }
     }
 
-    // When marked for disappearing (merged away), fade out smoothly
     LaunchedEffect(tile.isDisappearing) {
         if (tile.isDisappearing) {
-            alphaAnim.animateTo(0f, tween(150, easing = FastOutSlowInEasing))
+            launch { alphaAnim.animateTo(0f, tween(160, easing = FastOutSlowInEasing)) }
+            launch { squishX.animateTo(0.5f, tween(160, easing = FastOutSlowInEasing)) }
+            launch { squishY.animateTo(0.5f, tween(160, easing = FastOutSlowInEasing)) }
         }
     }
 
-    // Slide & directional stretch toward new grid cell
     LaunchedEffect(targetX, targetY) {
         if (xAnim.value != targetX || yAnim.value != targetY) {
             val movingHorizontally = abs(swipeAxis.x) >= abs(swipeAxis.y)
@@ -1038,29 +1039,46 @@ private fun Fluid2048Tile(
                 squishY.animateTo(1f, spring(dampingRatio = 0.40f, stiffness = 160f))
             }
             launch {
-                xAnim.animateTo(targetX, spring(dampingRatio = 0.72f, stiffness = 280f))
+                xAnim.animateTo(targetX, spring(dampingRatio = 0.76f, stiffness = 320f))
             }
             launch {
-                yAnim.animateTo(targetY, spring(dampingRatio = 0.72f, stiffness = 280f))
+                yAnim.animateTo(targetY, spring(dampingRatio = 0.76f, stiffness = 320f))
             }
         }
     }
 
-    // Soft-body bubble merge collision bloop!
     LaunchedEffect(tile.mergeTrigger) {
         if (tile.mergeTrigger > 0) {
-            mergeRing.snapTo(0.05f)
+            val movingHorizontally = abs(swipeAxis.x) >= abs(swipeAxis.y)
+
             launch {
-                mergeRing.animateTo(1f, tween(480, easing = FastOutSlowInEasing))
-                mergeRing.snapTo(0f)
-            }
-            squishX.snapTo(1.30f)
-            squishY.snapTo(0.75f)
-            launch {
-                squishX.animateTo(1f, spring(dampingRatio = 0.32f, stiffness = 160f))
+                refractionAnim.snapTo(0.40f)
+                refractionAnim.animateTo(0.28f, spring(dampingRatio = 0.45f, stiffness = 140f))
             }
             launch {
-                squishY.animateTo(1f, spring(dampingRatio = 0.32f, stiffness = 160f))
+                dispersionAnim.snapTo(0.12f)
+                dispersionAnim.animateTo(
+                    if (tile.value >= 16) 0.07f else 0.04f,
+                    spring(dampingRatio = 0.45f, stiffness = 140f)
+                )
+            }
+            launch {
+                numberScale.snapTo(1.32f)
+                numberScale.animateTo(1f, spring(dampingRatio = 0.45f, stiffness = 200f))
+            }
+
+            if (movingHorizontally) {
+                squishX.snapTo(0.74f)
+                squishY.snapTo(1.30f)
+            } else {
+                squishX.snapTo(1.30f)
+                squishY.snapTo(0.74f)
+            }
+            launch {
+                squishX.animateTo(1f, spring(dampingRatio = 0.34f, stiffness = 160f))
+            }
+            launch {
+                squishY.animateTo(1f, spring(dampingRatio = 0.34f, stiffness = 160f))
             }
         }
     }
@@ -1093,9 +1111,9 @@ private fun Fluid2048Tile(
             .liquidGlassEffect(
                 shape = tileShape,
                 cornerRadius = 22.dp,
-                refraction = 0.28f,
+                refraction = refractionAnim.value,
                 curve = 0.82f,
-                dispersion = if (tile.value >= 16) 0.07f else 0.04f,
+                dispersion = dispersionAnim.value,
                 tint = accentTint
             )
             .clip(tileShape)
@@ -1110,29 +1128,19 @@ private fun Fluid2048Tile(
             ),
         contentAlignment = Alignment.Center
     ) {
-        // Liquid splash ripple when two bubbles merge
-        if (mergeRing.value > 0f) {
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val p = mergeRing.value
-                drawCircle(
-                    color = CyanBright.copy(alpha = (1f - p) * 0.65f),
-                    radius = (size.minDimension * 0.35f) + (size.minDimension * 0.35f * p),
-                    style = Stroke(width = 3.dp.toPx() * (1f - p))
-                )
-            }
-        }
-
+        val isLight = com.example.ui.glass.LocalAmbientTheme.current.isLight
         Text(
             text = "${tile.value}",
-            color = if (tile.value >= 4) GoldAccent else Color.White,
+            color = if (tile.value >= 4) GoldAccent else (if (isLight) Color(0xFF1E2A20) else Color.White),
             fontSize = if (tile.value >= 1024) 18.sp else if (tile.value >= 128) 20.sp else 24.sp,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.scale(numberScale.value)
         )
     }
 }
 
 // ============================================================================
-// GAME 3: BUBBLE BURST (FLOATING SOFT-BODY LIQUID BUBBLES + POP PARTICLES)
+// GAME 3: BUBBLE BURST
 // ============================================================================
 private data class FloatingBubble(
     val id: Int,
@@ -1152,6 +1160,7 @@ private data class BurstEffect(
     var progress: Float = 0f
 )
 
+@Suppress("UnusedBoxWithConstraintsScope")
 @Composable
 private fun BubbleBurstGame() {
     val bubbles = remember { mutableStateListOf<FloatingBubble>() }
@@ -1159,7 +1168,7 @@ private fun BubbleBurstGame() {
     var nextId by remember { mutableIntStateOf(1) }
     var poppedCount by remember { mutableIntStateOf(0) }
     var bestCount by remember { mutableIntStateOf(0) }
-    var framePhase by remember { mutableStateOf(0f) }
+    var framePhase by remember { mutableFloatStateOf(0f) }
 
     fun createBubble(): FloatingBubble {
         val id = nextId++
@@ -1185,11 +1194,11 @@ private fun BubbleBurstGame() {
                 lastNanos = now
                 framePhase += dt * 3.2f
 
-                // Gently drift bubbles upward & wrap around
                 for (i in bubbles.indices) {
                     val b = bubbles[i]
                     var newY = b.yFraction - b.speedY * dt
                     var newX = b.xFraction + sin(framePhase + b.wobblePhase) * 0.025f * dt
+
                     if (newY < 0.10f) {
                         newY = 0.88f
                         newX = Random.nextFloat() * 0.72f + 0.14f
@@ -1200,7 +1209,6 @@ private fun BubbleBurstGame() {
                     )
                 }
 
-                // Advance burst droplet animations
                 val iterator = bursts.listIterator()
                 while (iterator.hasNext()) {
                     val burst = iterator.next()
@@ -1220,7 +1228,6 @@ private fun BubbleBurstGame() {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // Header & Stats
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             GameHeaderTitle(firstWord = "BUBBLE", secondWord = "BURST")
             Spacer(modifier = Modifier.height(12.dp))
@@ -1234,7 +1241,6 @@ private fun BubbleBurstGame() {
             }
         }
 
-        // Interactive Liquid Bubble Arena
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1242,10 +1248,9 @@ private fun BubbleBurstGame() {
                 .padding(vertical = 12.dp)
         ) {
             val density = LocalDensity.current
-            val arenaWidthPx = with(density) { maxWidth.toPx() }
-            val arenaHeightPx = with(density) { maxHeight.toPx() }
+            val arenaWidthPx = constraints.maxWidth.toFloat()
+            val arenaHeightPx = constraints.maxHeight.toFloat()
 
-            // Render Floating Liquid Glass Bubbles
             bubbles.forEach { bubble ->
                 key(bubble.id) {
                     val radiusPx = with(density) { bubble.radiusDp.dp.toPx() }
@@ -1315,7 +1320,6 @@ private fun BubbleBurstGame() {
                 }
             }
 
-            // Render Liquid Droplet Splash & Shockwave Rings on Burst
             Canvas(modifier = Modifier.fillMaxSize()) {
                 bursts.forEach { burst ->
                     val cx = burst.centerXFraction * size.width
@@ -1323,7 +1327,6 @@ private fun BubbleBurstGame() {
                     val p = burst.progress
                     val alpha = (1f - p).coerceIn(0f, 1f)
 
-                    // Expanding refractive shockwave ring
                     drawCircle(
                         color = CyanBright.copy(alpha = alpha * 0.55f),
                         radius = burst.baseRadiusPx * (0.8f + p * 1.1f),
@@ -1331,7 +1334,6 @@ private fun BubbleBurstGame() {
                         style = Stroke(width = 2.5.dp.toPx() * alpha)
                     )
 
-                    // 8 radial splashing micro-droplets
                     val dropletCount = 8
                     for (i in 0 until dropletCount) {
                         val angle = (i * (360f / dropletCount) + (burst.id * 17f)) * (Math.PI / 180.0)
@@ -1350,7 +1352,6 @@ private fun BubbleBurstGame() {
             }
         }
 
-        // Reset Counter Button
         GlassActionButton(
             text = "RESET ARENA",
             onClick = {
@@ -1363,17 +1364,18 @@ private fun BubbleBurstGame() {
 }
 
 // ============================================================================
-// SHARED TYPOGRAPHY & GLASS BUTTON COMPONENTS
+// SHARED COMPONENTS
 // ============================================================================
 @Composable
 private fun GameHeaderTitle(firstWord: String, secondWord: String) {
+    val isLight = com.example.ui.glass.LocalAmbientTheme.current.isLight
     Row(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = firstWord,
-            color = Color.White,
+            color = if (isLight) Color(0xFF1E2A20) else Color.White,
             fontSize = 30.sp,
             fontWeight = FontWeight.Light,
             letterSpacing = 1.5.sp
@@ -1391,10 +1393,11 @@ private fun GameHeaderTitle(firstWord: String, secondWord: String) {
 
 @Composable
 private fun StatLabel(label: String, value: String) {
+    val isLight = com.example.ui.glass.LocalAmbientTheme.current.isLight
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = "$label  ",
-            color = Color.White.copy(alpha = 0.55f),
+            color = if (isLight) Color(0xFF3B503E) else Color.White.copy(alpha = 0.55f),
             fontSize = 10.sp,
             letterSpacing = 1.5.sp
         )
@@ -1413,6 +1416,7 @@ private fun GlassActionButton(
     text: String,
     onClick: () -> Unit
 ) {
+    val isLight = com.example.ui.glass.LocalAmbientTheme.current.isLight
     val shape = RoundedCornerShape(14.dp)
     Box(
         modifier = Modifier
@@ -1426,12 +1430,12 @@ private fun GlassActionButton(
             .background(
                 Brush.linearGradient(
                     colors = listOf(
-                        Color.White.copy(alpha = 0.12f),
-                        Color.White.copy(alpha = 0.04f)
+                        if (isLight) Color(0xFF2C3E2B).copy(alpha = 0.12f) else Color.White.copy(alpha = 0.12f),
+                        if (isLight) Color(0xFF2C3E2B).copy(alpha = 0.05f) else Color.White.copy(alpha = 0.04f)
                     )
                 )
             )
-            .border(0.8.dp, Color.White.copy(alpha = 0.18f), shape)
+            .border(0.8.dp, if (isLight) Color(0xFF2C3E2B).copy(alpha = 0.35f) else Color.White.copy(alpha = 0.18f), shape)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = ripple(color = Color.White.copy(alpha = 0.25f)),
@@ -1442,7 +1446,7 @@ private fun GlassActionButton(
     ) {
         Text(
             text = text,
-            color = Color.White.copy(alpha = 0.9f),
+            color = if (isLight) Color(0xFF1E2A20) else Color.White.copy(alpha = 0.9f),
             fontSize = 11.sp,
             letterSpacing = 2.5.sp,
             textAlign = TextAlign.Center

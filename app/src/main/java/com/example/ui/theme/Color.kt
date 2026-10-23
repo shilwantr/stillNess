@@ -1,7 +1,9 @@
 package com.example.ui.theme
 
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import com.example.ui.glass.isLight
 
 // Option A: Midnight Sage & Warm Sand Foundation (Best All-Around Sanctuary)
 val MidnightDark = Color(0xFF0F1715)          // Deep Forest Slate (#0F1715)
@@ -36,10 +38,18 @@ val BlueDroplet = Color(0xFFA3C1AD)              // Eucalyptus (#A3C1AD)
 val BlueWater = Color(0xFF8FA89B)                // Celadon Sage (#8FA89B)
 val DustyRose = Color(0xFFC98A8A)                // Dusty Rose (#C98A8A) for calm crisis support
 
-// Text Colors (High contrast, clean organic typography)
-val TextWhite = Color(0xFFF0F4F2)
-val TextMuted = Color(0xFFC2D1C9)
-val TextSubtle = Color(0xFF90A499)
+// Adaptive Text Colors (High contrast black/dark olive in Light mode, crisp white in Dark mode)
+val TextWhite: Color
+    @Composable
+    get() = if (com.example.ui.glass.LocalAmbientTheme.current.isLight) Color(0xFF1E2A20) else Color(0xFFF0F4F2)
+
+val TextMuted: Color
+    @Composable
+    get() = if (com.example.ui.glass.LocalAmbientTheme.current.isLight) Color(0xFF3B503E) else Color(0xFFC2D1C9)
+
+val TextSubtle: Color
+    @Composable
+    get() = if (com.example.ui.glass.LocalAmbientTheme.current.isLight) Color(0xFF5B7260) else Color(0xFF90A499)
 
 // Borders: subtle 1px border
 val GlassBorderGradient = SolidColor(Color(0x268FA89B)) // rgba(143, 168, 155, 0.15)

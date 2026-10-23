@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.FormatQuote
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Opacity
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SelfImprovement
@@ -77,6 +78,7 @@ import com.example.ui.theme.GlassBorderActiveCyan
 import com.example.ui.theme.LiquidAzure
 import com.example.ui.theme.LiquidCobalt
 import com.example.ui.theme.OrangeFlame
+import com.example.ui.glass.isLight
 import com.example.ui.theme.PinkGlow
 import com.example.ui.theme.VioletBright
 import com.example.ui.viewmodel.WellnessViewModel
@@ -117,6 +119,13 @@ fun DashboardScreen(
     val upcomingCount = appointments.count { it.status == "UPCOMING" }
 
     val scrollState = rememberScrollState()
+    val ambientTheme by viewModel.ambientTheme.collectAsState()
+    val isLight = ambientTheme.isLight
+    val textColor = if (isLight) Color(0xFF1E2A20) else Color.White
+    val textSubtle = if (isLight) Color(0xFF3B503E) else Color.White.copy(alpha = 0.72f)
+    val textCaption = if (isLight) Color(0xFF5B7260) else Color.White.copy(alpha = 0.52f)
+    val glassBg = if (isLight) Color(0xFF1B2A1D).copy(alpha = 0.08f) else Color.White.copy(alpha = 0.14f)
+    val glassBorder = if (isLight) androidx.compose.ui.graphics.SolidColor(Color(0xFF2C3E2B).copy(alpha = 0.28f)) else FrostedGlassBorder
 
     androidx.activity.compose.BackHandler(enabled = showRobotDialog || showGamesDialog) {
         if (showGamesDialog) showGamesDialog = false
@@ -148,7 +157,7 @@ fun DashboardScreen(
                 Column {
                     Text(
                         text = "STILL",
-                        color = Color.White,
+                        color = textColor,
                         fontSize = 28.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 3.sp,
@@ -157,7 +166,7 @@ fun DashboardScreen(
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = "Mindful Presence & Daily Balance",
-                        color = Color.White.copy(alpha = 0.72f),
+                        color = textSubtle,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Normal
                     )
@@ -167,19 +176,36 @@ fun DashboardScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    val ambientTheme by viewModel.ambientTheme.collectAsState()
+                    androidx.compose.material3.IconButton(
+                        onClick = { viewModel.setProfileScreenOpen(true) },
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .background(glassBg)
+                            .border(1.dp, glassBorder, CircleShape)
+                            .size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Menu,
+                            contentDescription = "Profile",
+                            tint = textColor,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(20.dp))
-                            .background(Color.White.copy(alpha = 0.14f))
-                            .border(1.dp, FrostedGlassBorder, RoundedCornerShape(20.dp))
+                            .background(glassBg)
+                            .border(1.dp, glassBorder, RoundedCornerShape(20.dp))
                             .clickable { viewModel.cycleAmbientTheme() }
                             .padding(horizontal = 11.dp, vertical = 7.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             val dotColor = when (ambientTheme) {
-                                com.example.ui.glass.AmbientTheme.AURORA_SILK -> Color(0xFF7C98B3)
+                                com.example.ui.glass.AmbientTheme.MIDNIGHT_SAGE -> Color(0xFF8FA89B)
+                                com.example.ui.glass.AmbientTheme.COSMIC_DUSK -> Color(0xFF9D6BFF)
+                                com.example.ui.glass.AmbientTheme.OCEAN_ABYSS -> Color(0xFF38BDF8)
                                 com.example.ui.glass.AmbientTheme.FERRIS_WHEEL -> Color(0xFFE4E4E7)
                                 com.example.ui.glass.AmbientTheme.TIME_DYNAMIC -> {
                                     val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
@@ -190,6 +216,11 @@ fun DashboardScreen(
                                     }
                                 }
                                 com.example.ui.glass.AmbientTheme.LOOPING_TRIOS -> Color(0xFF283447)
+                                com.example.ui.glass.AmbientTheme.RESONANCE_TUNNEL -> Color(0xFF8A5CF5)
+                                com.example.ui.glass.AmbientTheme.CLEAN_WHITE -> Color(0xFF2C3E2B)
+                                com.example.ui.glass.AmbientTheme.LIGHT_TOPOGRAPHY -> Color(0xFF4A6B53)
+                                com.example.ui.glass.AmbientTheme.LIGHT_ZEN_RIPPLES -> Color(0xFF3A5A78)
+                                com.example.ui.glass.AmbientTheme.LIGHT_HALFTONE_WAVE -> Color(0xFF6B5A78)
                             }
                             Box(
                                 modifier = Modifier
@@ -200,7 +231,7 @@ fun DashboardScreen(
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = ambientTheme.label,
-                                color = Color.White.copy(alpha = 0.92f),
+                                color = textColor,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Medium
                             )
@@ -306,7 +337,7 @@ fun DashboardScreen(
                         Column {
                             Text(
                                 text = "“${quote.text}”",
-                                color = Color.White,
+                                color = textColor,
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Medium,
                                 fontStyle = FontStyle.Italic,
@@ -320,7 +351,7 @@ fun DashboardScreen(
                             ) {
                                 Text(
                                     text = "— ${quote.author}",
-                                    color = Color.White.copy(alpha = 0.78f),
+                                    color = textSubtle,
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.SemiBold
                                 )
@@ -328,13 +359,13 @@ fun DashboardScreen(
                                     Icon(
                                         imageVector = Icons.Default.AutoAwesome,
                                         contentDescription = null,
-                                        tint = CyanBright.copy(alpha = 0.75f),
+                                        tint = if (isLight) Color(0xFF2C3E2B) else CyanBright.copy(alpha = 0.75f),
                                         modifier = Modifier.size(11.dp)
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text(
                                         text = "Rotates on open",
-                                        color = Color.White.copy(alpha = 0.52f),
+                                        color = textCaption,
                                         fontSize = 10.sp
                                     )
                                 }
@@ -357,10 +388,7 @@ fun DashboardScreen(
             ) {
                 MoodSelectorCard(
                     selectedMood = selectedMood,
-                    onMoodSelected = { viewModel.selectMood(it) },
-                    onMewMewClick = { showRobotDialog = true },
-                    onGamesClick = { showGamesDialog = true },
-                    onEmoClick = { viewModel.setEmoScreenOpen(true) }
+                    onMoodSelected = { viewModel.selectMood(it) }
                 )
             }
 
@@ -371,7 +399,7 @@ fun DashboardScreen(
             // ================================================================
             Text(
                 text = "Daily Practices & Activity",
-                color = Color.White,
+                color = textColor,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
                 letterSpacing = (-0.2).sp
@@ -423,7 +451,7 @@ fun DashboardScreen(
                             Column {
                                 Text(
                                     text = "Glass Bubble Breathwork",
-                                    color = Color.White,
+                                    color = textColor,
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.SemiBold
                                 )
@@ -433,7 +461,7 @@ fun DashboardScreen(
                                     } else {
                                         "5 min guided rhythm • Restores calm"
                                     },
-                                    color = Color.White.copy(alpha = 0.68f),
+                                    color = textSubtle,
                                     fontSize = 11.sp
                                 )
                             }
@@ -441,7 +469,7 @@ fun DashboardScreen(
 
                         Text(
                             text = "Breathe",
-                            color = CyanBright,
+                            color = if (isLight) Color(0xFF2C3E2B) else CyanBright,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -491,13 +519,13 @@ fun DashboardScreen(
                             Column {
                                 Text(
                                     text = "Hydration Intake",
-                                    color = Color.White,
+                                    color = textColor,
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.SemiBold
                                 )
                                 Text(
                                     text = "${(waterMl / 1000f).formatOne()} / ${(waterGoalMl / 1000f).formatOne()} Litres (${(waterMl * 100 / waterGoalMl.coerceAtLeast(1))}%)",
-                                    color = Color.White.copy(alpha = 0.68f),
+                                    color = textSubtle,
                                     fontSize = 11.sp
                                 )
                             }
@@ -505,7 +533,7 @@ fun DashboardScreen(
 
                         Text(
                             text = "+ Log",
-                            color = CyanBright,
+                            color = if (isLight) Color(0xFF2C3E2B) else CyanBright,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -555,13 +583,13 @@ fun DashboardScreen(
                             Column {
                                 Text(
                                     text = "Walking Activity",
-                                    color = Color.White,
+                                    color = textColor,
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.SemiBold
                                 )
                                 Text(
                                     text = "%,d / %,d steps • %d kcal".format(currentSteps, stepGoal, activeBurn),
-                                    color = Color.White.copy(alpha = 0.68f),
+                                    color = textSubtle,
                                     fontSize = 11.sp
                                 )
                             }
@@ -579,82 +607,6 @@ fun DashboardScreen(
             } // End EditableCardWrapper for Walking
 
             Spacer(modifier = Modifier.height(92.dp))
-        }
-
-        // Robot Overlay
-        androidx.compose.animation.AnimatedVisibility(
-            visible = showRobotDialog,
-            enter = androidx.compose.animation.fadeIn(),
-            exit = androidx.compose.animation.fadeOut(),
-            modifier = Modifier.fillMaxSize()
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color(0xFF040B1A).copy(alpha = 0.65f))
-                    .pointerInput(Unit) { detectTapGestures { } } // Block touches from passing through
-            ) {
-                GlassCard(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(24.dp),
-                    cornerRadius = 32.dp
-                ) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        GlassRobot()
-                        
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(16.dp)
-                                .clip(CircleShape)
-                                .clickable { showRobotDialog = false }
-                                .background(Color.White.copy(alpha = 0.1f))
-                                .padding(12.dp)
-                        ) {
-                            Text("Close", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-            }
-        }
-
-        // Games Overlay (full screen card same as mew mew robot)
-        androidx.compose.animation.AnimatedVisibility(
-            visible = showGamesDialog,
-            enter = androidx.compose.animation.fadeIn(),
-            exit = androidx.compose.animation.fadeOut(),
-            modifier = Modifier.fillMaxSize()
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color(0xFF040B1A).copy(alpha = 0.70f))
-                    .pointerInput(Unit) { detectTapGestures { } } // Block touches from passing through
-            ) {
-                GlassCard(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    cornerRadius = 32.dp
-                ) {
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        StillGamesScreen(modifier = Modifier.fillMaxSize())
-
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(16.dp)
-                                .clip(CircleShape)
-                                .clickable { showGamesDialog = false }
-                                .background(Color.White.copy(alpha = 0.15f))
-                                .padding(horizontal = 14.dp, vertical = 8.dp)
-                        ) {
-                            Text("Close", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-            }
         }
 
         // Quick Water Dialog
