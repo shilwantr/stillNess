@@ -1,5 +1,4 @@
 package com.example.ui.animations
-
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -29,6 +28,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -45,19 +45,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.clipPath
-import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
@@ -71,14 +65,10 @@ import kotlin.math.cos
 import kotlin.math.floor
 import kotlin.math.max
 import kotlin.math.min
-import kotlin.math.pow
 import kotlin.math.sin
-import kotlin.math.sqrt
-
 // ============================================================================
 // ENUMS & CONFIGURATION MODELS
 // ============================================================================
-
 enum class AmbientSceneType(
     val title: String,
     val subtitle: String,
@@ -120,19 +110,16 @@ enum class AmbientSceneType(
         badgeColor = Color(0xFF4DD0E1)
     )
 }
-
 enum class HeadspaceSubScene(val label: String) {
     HARBOR_DOCK("Harbor Cats & Boat"),
     NIGHT_FOUNTAIN("Night Courtyard Fountain"),
     AUTO_CYCLE("Auto-Blend Both")
 }
-
 enum class RainStyleMode(val label: String) {
     STREAKS_AND_BUBBLES("Rain Lines + Water Bubbles"),
     STRAIGHT_LINES("Straight Rain Lines"),
     WATER_BUBBLES("Water Bubble Drops")
 }
-
 enum class TimeOfDayCycle(val label: String) {
     AUTO_CYCLE("Auto Time Cycle"),
     SUNSHINE_MORNING("Sunshine Morning"),
@@ -140,18 +127,15 @@ enum class TimeOfDayCycle(val label: String) {
     CLOUDY_OVERCAST("Cloudy Sky"),
     MOONLIT_NIGHT("Moonlit Night")
 }
-
 enum class WaveWeatherState(val label: String) {
     AUTO_CYCLE("Auto Weather"),
     SUNNY_CALM("Sunny & Calm"),
     CLOUDY_PEACEFUL("Cloudy & Peaceful"),
     WINDY_SWELL("Windy Swell")
 }
-
 // ============================================================================
 // CONTINUOUS FRAME TIME HOOK (60/120 FPS SMOOTH INFINITE LOOP)
 // ============================================================================
-
 @Composable
 fun rememberContinuousTimeSeconds(): Float {
     var timeSeconds by remember { mutableFloatStateOf(0f) }
@@ -165,17 +149,16 @@ fun rememberContinuousTimeSeconds(): Float {
     }
     return timeSeconds
 }
-
 // ============================================================================
-// MAIN FULLSCREEN SECTION COMPOSABLE (DROP-IN ENTRY POINT FOR YOUR APP)
+// MAIN FULLSCREEN SECTION COMPOSABLE (PORTRAIT-OPTIMIZED FOR MOBILE SCREENS)
 // ============================================================================
-
 /**
- * Fullscreen 2D Animations Section containing all 6 scenes (including both Headspace
- * reference scenes and the 5 nature animations: Cloud & Rain, Wind & Tree, Forest Grass,
- * Night Campfire & Meteors, and Ocean Waves & Boat).
+ * Fullscreen 2D Animations Section optimized for vertical/portrait mobile screens.
+ * Uses a unified isotropic scale unit `u = min(size.width, size.height)` for all
+ * object geometry (cats, boats, fountains, trees, tents, campfires, lighthouses,
+ * and clouds) so no artwork ever appears vertically stretched on tall phone screens.
  *
- * Tap anywhere on the fullscreen canvas to toggle the sleek glassmorphic scene & weather HUD.
+ * Tap anywhere on the fullscreen canvas to toggle the glassmorphic HUD.
  */
 @Composable
 fun AmbientNatureAnimationsSection(
@@ -190,13 +173,11 @@ fun AmbientNatureAnimationsSection(
     )
     val coroutineScope = rememberCoroutineScope()
     var showHud by remember { mutableStateOf(true) }
-
     // Per-scene interactive state controls
     var headspaceSubScene by remember { mutableStateOf(HeadspaceSubScene.HARBOR_DOCK) }
     var rainStyleMode by remember { mutableStateOf(RainStyleMode.STREAKS_AND_BUBBLES) }
     var windTimeOfDay by remember { mutableStateOf(TimeOfDayCycle.AUTO_CYCLE) }
     var waveWeather by remember { mutableStateOf(WaveWeatherState.AUTO_CYCLE) }
-
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -211,7 +192,7 @@ fun AmbientNatureAnimationsSection(
         ) { pageIndex ->
             when (scenes[pageIndex]) {
                 AmbientSceneType.HARBOR_CATS_DOCK -> HeadspaceCatsAndFountainScene(
-                    subScene = HeadspaceSubScene.HARBOR_DOCK,
+                    subScene = headspaceSubScene,
                     modifier = Modifier.fillMaxSize()
                 )
                 AmbientSceneType.NIGHT_COURTYARD_FOUNTAIN -> HeadspaceCatsAndFountainScene(
@@ -238,7 +219,6 @@ fun AmbientNatureAnimationsSection(
                 )
             }
         }
-
         // Sleek floating HUD (tap fullscreen anywhere to hide/show for pure immersion)
         AnimatedVisibility(
             visible = showHud,
@@ -279,7 +259,7 @@ fun AmbientNatureAnimationsSection(
                                     .padding(8.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-                                androidx.compose.material3.Icon(
+                                Icon(
                                     imageVector = Icons.Default.ArrowBack,
                                     contentDescription = "Back",
                                     tint = Color.White,
@@ -287,7 +267,6 @@ fun AmbientNatureAnimationsSection(
                                 )
                             }
                         }
-
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = currentScene.title,
@@ -302,7 +281,6 @@ fun AmbientNatureAnimationsSection(
                                 fontSize = 11.sp
                             )
                         }
-
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(6.dp),
                             verticalAlignment = Alignment.CenterVertically
@@ -329,7 +307,6 @@ fun AmbientNatureAnimationsSection(
                             }
                         }
                     }
-
                     // Contextual sub-controls for the active animation
                     Spacer(modifier = Modifier.height(10.dp))
                     when (currentScene) {
@@ -378,7 +355,6 @@ fun AmbientNatureAnimationsSection(
                         }
                     }
                 }
-
                 // Bottom Scene Selector Pills
                 Row(
                     modifier = Modifier
@@ -425,7 +401,6 @@ fun AmbientNatureAnimationsSection(
         }
     }
 }
-
 @Composable
 private fun <T> ModeChipRow(
     options: List<T>,
@@ -465,13 +440,11 @@ private fun <T> ModeChipRow(
         }
     }
 }
-
 // ============================================================================
-// SCENE 1 (INCLUDES BOTH UPLOADED HEADSPACE SCENES):
+// SCENE 1 & 2 (HEADSPACE SCENES - PORTRAIT-OPTIMIZED ISOTROPIC GEOMETRY):
 // 1A: NIGHT HARBOR DOCK WITH SLEEPING CYAN CATS & BOBBING BOAT
 // 1B: NIGHT COURTYARD FOUNTAIN WITH PROWLING BLUE CAT & WATER RIPPLES
 // ============================================================================
-
 @Composable
 fun HeadspaceCatsAndFountainScene(
     subScene: HeadspaceSubScene = HeadspaceSubScene.HARBOR_DOCK,
@@ -488,315 +461,313 @@ fun HeadspaceCatsAndFountainScene(
             }
         }
         if (activeMode == HeadspaceSubScene.HARBOR_DOCK) {
-            drawHeadspaceHarborCats(t)
+            drawHeadspaceHarborCatsPortrait(t)
         } else {
-            drawHeadspaceNightFountain(t)
+            drawHeadspaceNightFountainPortrait(t)
         }
     }
 }
-
-private fun DrawScope.drawHeadspaceHarborCats(t: Float) {
+private fun DrawScope.drawHeadspaceHarborCatsPortrait(t: Float) {
     val w = size.width
     val h = size.height
-
-    // Deep indigo-violet night sky matching image_ae3a5d.jpg
+    // Unified isotropic scale unit (equals screen width on portrait phones)
+    // All object widths AND heights use `u` so nothing ever stretches vertically!
+    val u = min(w, h)
+    // Deep indigo-violet night sky
     drawRect(
         brush = Brush.verticalGradient(
             colors = listOf(
-                Color(0xFF282268),
-                Color(0xFF332B7A),
-                Color(0xFF3E348A)
+                Color(0xFF231D5E),
+                Color(0xFF2D2570),
+                Color(0xFF3B3185)
             )
         )
     )
-
-    // Twinkling 5-point stars and small night dots
+    val seaTopY = h * 0.68f
+    // Twinkling 5-point stars and small night dots in the upper sky
     val starSpots = listOf(
-        Triple(0.06f, 0.08f, 1.0f),
-        Triple(0.11f, 0.17f, 0.6f),
-        Triple(0.18f, 0.19f, 1.3f),
-        Triple(0.09f, 0.27f, 1.1f),
-        Triple(0.73f, 0.19f, 0.6f),
-        Triple(0.78f, 0.26f, 0.7f),
-        Triple(0.82f, 0.21f, 1.2f),
-        Triple(0.92f, 0.22f, 1.15f)
+        Triple(0.10f, 0.14f, 1.0f),
+        Triple(0.22f, 0.20f, 0.65f),
+        Triple(0.35f, 0.16f, 1.25f),
+        Triple(0.16f, 0.28f, 1.1f),
+        Triple(0.68f, 0.15f, 0.7f),
+        Triple(0.82f, 0.22f, 1.2f),
+        Triple(0.74f, 0.30f, 0.65f),
+        Triple(0.90f, 0.17f, 1.1f),
+        Triple(0.48f, 0.25f, 0.8f),
+        Triple(0.12f, 0.37f, 0.9f),
+        Triple(0.86f, 0.35f, 1.15f)
     )
     starSpots.forEachIndexed { index, (sx, sy, scale) ->
         val twinkle = 0.55f + 0.45f * sin(t * 1.8f + index * 1.3f)
         val cx = w * sx
         val cy = h * sy
-        if (scale > 0.9f) {
+        if (scale > 0.85f) {
             drawFivePointStar(
                 center = Offset(cx, cy),
-                outerRadius = 9f * scale * (0.9f + 0.1f * twinkle),
-                innerRadius = 4.2f * scale,
-                color = Color(0xFF564D9A).copy(alpha = twinkle)
+                outerRadius = u * 0.018f * scale * (0.9f + 0.1f * twinkle),
+                innerRadius = u * 0.008f * scale,
+                color = Color(0xFF5E54A8).copy(alpha = twinkle)
             )
         } else {
             drawCircle(
-                color = Color(0xFF665DB0).copy(alpha = twinkle),
-                radius = 5f * scale,
+                color = Color(0xFF6B61B8).copy(alpha = twinkle),
+                radius = u * 0.009f * scale,
                 center = Offset(cx, cy)
             )
         }
     }
-
-    // Back billowing purple cloud bank
-    drawPuffyCloudBank(
-        baseY = h * 0.73f,
+    // Back billowing purple cloud bank anchored relative to seaTopY using `u`
+    drawPortraitCloudBank(
+        horizonY = seaTopY,
         color = Color(0xFF43398B),
-        driftOffset = sin(t * 0.18f) * 18f,
+        driftOffset = sin(t * 0.18f) * (u * 0.035f),
         puffs = listOf(
-            Triple(0.03f, 0.44f, 0.22f),
-            Triple(0.18f, 0.40f, 0.25f),
-            Triple(0.35f, 0.55f, 0.18f),
-            Triple(0.54f, 0.59f, 0.16f),
-            Triple(0.71f, 0.45f, 0.22f),
-            Triple(0.88f, 0.36f, 0.26f),
-            Triple(1.02f, 0.28f, 0.25f)
+            Triple(0.05f, 0.38f, 0.28f),
+            Triple(0.26f, 0.34f, 0.30f),
+            Triple(0.48f, 0.20f, 0.22f),
+            Triple(0.70f, 0.28f, 0.26f),
+            Triple(0.92f, 0.42f, 0.32f)
         )
     )
-
     // Mid-layer lighter lavender-purple cloud bank
-    drawPuffyCloudBank(
-        baseY = h * 0.75f,
+    drawPortraitCloudBank(
+        horizonY = seaTopY,
         color = Color(0xFF554A9E),
-        driftOffset = cos(t * 0.24f) * 24f,
+        driftOffset = cos(t * 0.24f) * (u * 0.045f),
         puffs = listOf(
-            Triple(0.12f, 0.58f, 0.15f),
-            Triple(0.62f, 0.52f, 0.19f),
-            Triple(0.78f, 0.42f, 0.23f),
-            Triple(0.95f, 0.35f, 0.24f)
+            Triple(0.14f, 0.20f, 0.20f),
+            Triple(0.58f, 0.18f, 0.22f),
+            Triple(0.78f, 0.26f, 0.26f),
+            Triple(0.96f, 0.34f, 0.28f)
         )
     )
-
-    val seaTopY = h * 0.74f
-
-    // Distant cruise/cargo ship silhouette slowly gliding on the horizon
-    val shipX = ((w * 0.28f + t * 8f) % (w * 0.65f)) + w * 0.08f
-    val shipBob = sin(t * 1.4f) * 2.5f
-    val shipY = seaTopY + h * 0.02f + shipBob
+    // Distant cruise/cargo ship silhouette slowly gliding on the horizon (sized in `u`)
+    val shipX = ((w * 0.18f + t * (u * 0.016f)) % (w * 0.58f)) + w * 0.06f
+    val shipBob = sin(t * 1.4f) * (u * 0.005f)
+    val shipY = seaTopY - u * 0.02f + shipBob
+    val shipW = u * 0.16f
+    val shipH = u * 0.042f
     val shipHull = Path().apply {
         moveTo(shipX, shipY)
-        lineTo(shipX + w * 0.105f, shipY)
-        lineTo(shipX + w * 0.092f, shipY + h * 0.032f)
-        lineTo(shipX + w * 0.01f, shipY + h * 0.032f)
+        lineTo(shipX + shipW, shipY)
+        lineTo(shipX + shipW * 0.88f, shipY + shipH)
+        lineTo(shipX + shipW * 0.10f, shipY + shipH)
         close()
     }
     drawPath(shipHull, color = Color(0xFF473D96))
     drawRoundRect(
         color = Color(0xFF473D96),
-        topLeft = Offset(shipX + w * 0.014f, shipY - h * 0.024f),
-        size = Size(w * 0.055f, h * 0.026f),
-        cornerRadius = CornerRadius(4f, 4f)
+        topLeft = Offset(shipX + shipW * 0.14f, shipY - shipH * 0.72f),
+        size = Size(shipW * 0.52f, shipH * 0.78f),
+        cornerRadius = CornerRadius(u * 0.008f, u * 0.008f)
     )
     for (p in 0..2) {
         drawCircle(
             color = Color(0xFF2B226E),
-            radius = 3.5f,
-            center = Offset(shipX + w * 0.024f + p * w * 0.015f, shipY - h * 0.011f)
+            radius = u * 0.006f,
+            center = Offset(
+                shipX + shipW * (0.24f + p * 0.14f),
+                shipY - shipH * 0.34f
+            )
         )
     }
-
     // Deep indigo harbor sea
     drawRect(
         color = Color(0xFF2B226E),
         topLeft = Offset(0f, seaTopY),
         size = Size(w, h - seaTopY)
     )
-
-    // Slow undulating dark water current ribbons
-    val waveRibbonPositions = listOf(
-        Offset(w * 0.03f, h * 0.79f) to w * 0.09f,
-        Offset(w * 0.22f, h * 0.89f) to w * 0.26f,
-        Offset(w * 0.66f, h * 0.84f) to w * 0.13f,
-        Offset(w * 0.55f, h * 0.94f) to w * 0.18f,
-        Offset(w * 0.84f, h * 0.95f) to w * 0.15f
+    // Slow undulating dark water current ribbons in the sea
+    val waveRibbonSpecs = listOf(
+        Triple(0.05f, 0.14f, 0.16f),
+        Triple(0.22f, 0.42f, 0.32f),
+        Triple(0.64f, 0.28f, 0.20f),
+        Triple(0.50f, 0.56f, 0.26f),
+        Triple(0.12f, 0.72f, 0.28f),
+        Triple(0.68f, 0.78f, 0.24f)
     )
-    waveRibbonPositions.forEachIndexed { idx, (pos, len) ->
-        val shift = sin(t * 1.2f + idx * 1.1f) * 14f
+    waveRibbonSpecs.forEachIndexed { idx, (xFrac, depthFrac, lenFrac) ->
+        val shift = sin(t * 1.2f + idx * 1.1f) * (u * 0.025f)
+        val startX = w * xFrac + shift
+        val y0 = seaTopY + (h - seaTopY) * depthFrac
+        val len = u * lenFrac
+        val amp = u * 0.012f
         val path = Path().apply {
-            val y0 = pos.y
-            moveTo(pos.x + shift, y0)
+            moveTo(startX, y0)
             cubicTo(
-                pos.x + len * 0.33f + shift, y0 - 8f * sin(t + idx),
-                pos.x + len * 0.66f + shift, y0 + 8f * cos(t + idx),
-                pos.x + len + shift, y0
+                startX + len * 0.33f, y0 - amp * sin(t + idx),
+                startX + len * 0.66f, y0 + amp * cos(t + idx),
+                startX + len, y0
             )
         }
         drawPath(
             path = path,
             color = Color(0xFF211A5A),
-            style = Stroke(width = 12f, cap = StrokeCap.Round)
+            style = Stroke(width = u * 0.020f, cap = StrokeCap.Round)
         )
     }
-
-    // Wooden Pier & Piling Post on the left-center
-    val pierY = h * 0.605f
-    val postX = w * 0.422f
-    val postW = w * 0.042f
-    val postTopY = h * 0.50f
-    val postBottomY = h * 0.92f
-
+    // Wooden Pier & Piling Post (all dimensions in `u` so planks and post have natural thickness)
+    val pierY = seaTopY - u * 0.20f
+    val plankHeight = u * 0.058f
+    val postX = w * 0.42f
+    val postW = u * 0.068f
+    val postTopY = pierY - u * 0.15f
+    val postBottomY = seaTopY + u * 0.26f
     // Support diagonal struts under pier
     val leftStrut = Path().apply {
-        moveTo(postX - w * 0.055f, pierY + h * 0.035f)
-        lineTo(postX - w * 0.025f, pierY + h * 0.035f)
-        lineTo(postX + postW * 0.2f, pierY + h * 0.16f)
-        lineTo(postX, pierY + h * 0.16f)
+        moveTo(postX - u * 0.085f, pierY + plankHeight * 0.8f)
+        lineTo(postX - u * 0.040f, pierY + plankHeight * 0.8f)
+        lineTo(postX + postW * 0.2f, pierY + u * 0.22f)
+        lineTo(postX, pierY + u * 0.22f)
         close()
     }
     val rightStrut = Path().apply {
-        moveTo(postX + postW + w * 0.055f, pierY + h * 0.035f)
-        lineTo(postX + postW + w * 0.025f, pierY + h * 0.035f)
-        lineTo(postX + postW * 0.8f, pierY + h * 0.16f)
-        lineTo(postX + postW, pierY + h * 0.16f)
+        moveTo(postX + postW + u * 0.085f, pierY + plankHeight * 0.8f)
+        lineTo(postX + postW + u * 0.040f, pierY + plankHeight * 0.8f)
+        lineTo(postX + postW * 0.8f, pierY + u * 0.22f)
+        lineTo(postX + postW, pierY + u * 0.22f)
         close()
     }
     drawPath(leftStrut, color = Color(0xFF3E4098))
     drawPath(rightStrut, color = Color(0xFF3E4098))
-
     // Horizontal pier planks
     val plankSpecs = listOf(
-        0.0f to 0.045f,
-        0.052f to 0.145f,
-        0.152f to 0.200f,
-        0.207f to 0.352f,
-        0.358f to 0.505f
+        0.0f to 0.06f,
+        0.07f to 0.18f,
+        0.19f to 0.26f,
+        0.27f to 0.41f,
+        0.42f to 0.54f
     )
     plankSpecs.forEach { (startFrac, endFrac) ->
         drawRoundRect(
             color = Color(0xFF4749A6),
             topLeft = Offset(w * startFrac, pierY),
-            size = Size(w * (endFrac - startFrac), h * 0.045f),
-            cornerRadius = CornerRadius(6f, 6f)
+            size = Size(w * (endFrac - startFrac), plankHeight),
+            cornerRadius = CornerRadius(u * 0.012f, u * 0.012f)
         )
     }
-
-    // Vertical wooden post
+    // Vertical wooden piling post
     drawRoundRect(
         color = Color(0xFF4749A6),
         topLeft = Offset(postX, postTopY),
         size = Size(postW, postBottomY - postTopY),
         cornerRadius = CornerRadius(postW * 0.35f, postW * 0.35f)
     )
-    // Post top cap oval
+    // Post top cap oval (true perspective ellipse ratio)
     drawOval(
         color = Color(0xFF6B73C9),
-        topLeft = Offset(postX, postTopY - h * 0.012f),
-        size = Size(postW, h * 0.024f)
+        topLeft = Offset(postX, postTopY - postW * 0.22f),
+        size = Size(postW, postW * 0.44f)
     )
     // Post wood grain highlights
     drawRoundRect(
         color = Color(0xFF7B84DB),
-        topLeft = Offset(postX + postW * 0.22f, postTopY + h * 0.24f),
-        size = Size(postW * 0.14f, h * 0.032f),
-        cornerRadius = CornerRadius(6f, 6f)
+        topLeft = Offset(postX + postW * 0.22f, postTopY + u * 0.30f),
+        size = Size(postW * 0.15f, u * 0.048f),
+        cornerRadius = CornerRadius(u * 0.01f, u * 0.01f)
     )
     drawRoundRect(
         color = Color(0xFF7B84DB),
-        topLeft = Offset(postX + postW * 0.55f, postTopY + h * 0.29f),
-        size = Size(postW * 0.14f, h * 0.045f),
-        cornerRadius = CornerRadius(6f, 6f)
+        topLeft = Offset(postX + postW * 0.56f, postTopY + u * 0.36f),
+        size = Size(postW * 0.15f, u * 0.062f),
+        cornerRadius = CornerRadius(u * 0.01f, u * 0.01f)
     )
-
-    // Water ripple rings around the base of the post
+    // Water ripple arc around the base of the post (true perspective oval in `u`)
     val postRippleScale = 1f + 0.08f * sin(t * 2.1f)
+    val rippleW = postW * 2.1f * postRippleScale
+    val rippleH = rippleW * 0.34f
     drawArc(
         color = Color(0xFF211A5A),
         startAngle = 15f,
         sweepAngle = 150f,
         useCenter = false,
-        topLeft = Offset(postX - postW * 0.45f * postRippleScale, postBottomY - h * 0.03f),
-        size = Size(postW * 1.9f * postRippleScale, h * 0.05f),
-        style = Stroke(width = 9f, cap = StrokeCap.Round)
+        topLeft = Offset(postX + postW * 0.5f - rippleW * 0.5f, postBottomY - rippleH * 0.55f),
+        size = Size(rippleW, rippleH),
+        style = Stroke(width = u * 0.016f, cap = StrokeCap.Round)
     )
-
-    // LEFT SLEEPING CHUNKY CYAN CAT ON THE PIER
-    val breath = 1f + 0.025f * sin(t * 1.9f)
-    val catBaseX = w * 0.205f
+    // LEFT SLEEPING CHUBBY CYAN CAT ON THE PIER (1:1 isotropic `u` proportions — zero stretching!)
+    val breath = 1f + 0.028f * sin(t * 1.9f)
+    val catBaseX = w * 0.22f
     val catBaseY = pierY
+    val catW = u * 0.21f
+    val catH = u * 0.21f * breath
     // Swaying curved tail
-    val tailSway = sin(t * 1.4f) * 10f
+    val tailSway = sin(t * 1.4f) * (u * 0.018f)
     val tailPath = Path().apply {
-        moveTo(catBaseX - w * 0.062f, catBaseY - h * 0.01f)
+        moveTo(catBaseX - catW * 0.46f, catBaseY - catH * 0.08f)
         cubicTo(
-            catBaseX - w * 0.085f, catBaseY - h * 0.08f,
-            catBaseX - w * 0.075f, catBaseY - h * 0.17f,
-            catBaseX - w * 0.102f + tailSway * 0.4f, catBaseY - h * 0.195f + tailSway * 0.2f
+            catBaseX - catW * 0.68f, catBaseY - catH * 0.45f,
+            catBaseX - catW * 0.58f, catBaseY - catH * 0.90f,
+            catBaseX - catW * 0.78f + tailSway, catBaseY - catH * 1.05f + tailSway * 0.4f
         )
     }
     drawPath(
         path = tailPath,
         color = Color(0xFF5CE1E6),
-        style = Stroke(width = w * 0.022f, cap = StrokeCap.Round)
+        style = Stroke(width = u * 0.034f, cap = StrokeCap.Round)
     )
-
-    // Pear-shaped breathing cat body + pointed ears
+    // Pear-shaped chubby sleeping cat body + pointed ears
     val leftCatPath = Path().apply {
-        moveTo(catBaseX - w * 0.064f, catBaseY)
+        moveTo(catBaseX - catW * 0.50f, catBaseY)
         cubicTo(
-            catBaseX - w * 0.068f, catBaseY - h * 0.09f * breath,
-            catBaseX - w * 0.042f, catBaseY - h * 0.145f * breath,
-            catBaseX - w * 0.035f, catBaseY - h * 0.165f * breath
+            catBaseX - catW * 0.54f, catBaseY - catH * 0.48f,
+            catBaseX - catW * 0.34f, catBaseY - catH * 0.76f,
+            catBaseX - catW * 0.27f, catBaseY - catH * 0.86f
         )
         // Left ear
-        lineTo(catBaseX - w * 0.026f, catBaseY - h * 0.198f * breath)
-        lineTo(catBaseX - w * 0.009f, catBaseY - h * 0.172f * breath)
+        lineTo(catBaseX - catW * 0.20f, catBaseY - catH * 1.04f)
+        lineTo(catBaseX - catW * 0.06f, catBaseY - catH * 0.90f)
         // Forehead
-        lineTo(catBaseX + w * 0.012f, catBaseY - h * 0.172f * breath)
+        lineTo(catBaseX + catW * 0.08f, catBaseY - catH * 0.90f)
         // Right ear
-        lineTo(catBaseX + w * 0.029f, catBaseY - h * 0.198f * breath)
-        lineTo(catBaseX + w * 0.038f, catBaseY - h * 0.165f * breath)
+        lineTo(catBaseX + catW * 0.22f, catBaseY - catH * 1.04f)
+        lineTo(catBaseX + catW * 0.29f, catBaseY - catH * 0.86f)
         // Right body curve
         cubicTo(
-            catBaseX + w * 0.052f, catBaseY - h * 0.135f * breath,
-            catBaseX + w * 0.070f, catBaseY - h * 0.08f * breath,
-            catBaseX + w * 0.065f, catBaseY
+            catBaseX + catW * 0.40f, catBaseY - catH * 0.72f,
+            catBaseX + catW * 0.55f, catBaseY - catH * 0.44f,
+            catBaseX + catW * 0.50f, catBaseY
         )
         close()
     }
     drawPath(leftCatPath, color = Color(0xFF5CE1E6))
-
     // Left cat peaceful closed eyes & nose/mouth
-    val faceY = catBaseY - h * 0.145f * breath
     drawSleepingCatFace(
-        center = Offset(catBaseX + w * 0.002f, faceY),
-        scale = w * 0.001f,
+        center = Offset(catBaseX + catW * 0.01f, catBaseY - catH * 0.74f),
+        scale = u * 0.00145f,
         strokeColor = Color(0xFF282268)
     )
-
-    // RIGHT BOBBING BOAT WITH PORTHOLE CAT & ROOF SLEEPING CAT
-    val boatBobY = sin(t * 1.55f) * (h * 0.014f)
-    val boatPitchDeg = cos(t * 1.55f) * 1.8f
-
+    // RIGHT BOBBING BOAT WITH PORTHOLE CAT & ROOF SLEEPING CAT (1:1 isotropic `u` proportions)
+    val boatBobY = sin(t * 1.55f) * (u * 0.018f)
+    val boatPitchDeg = cos(t * 1.55f) * 2.0f
+    val boatAnchorX = w * 0.78f
+    val boatWaterlineY = seaTopY + u * 0.04f
     withTransform({
         translate(left = 0f, top = boatBobY)
-        rotate(degrees = boatPitchDeg, pivot = Offset(w * 0.86f, h * 0.72f))
+        rotate(degrees = boatPitchDeg, pivot = Offset(boatAnchorX, boatWaterlineY))
     }) {
-        val cabinLeft = w * 0.82f
-        val cabinTop = h * 0.485f
-        val cabinRight = w * 1.03f
-        val cabinBottom = h * 0.73f
-
+        val cabinLeft = boatAnchorX - u * 0.06f
+        val cabinRight = w * 1.04f
+        val cabinBottom = boatWaterlineY
+        val cabinTop = cabinBottom - u * 0.34f
         // Boat cabin housing
         drawRoundRect(
             color = Color(0xFF5054B5),
             topLeft = Offset(cabinLeft, cabinTop),
             size = Size(cabinRight - cabinLeft, cabinBottom - cabinTop),
-            cornerRadius = CornerRadius(24f, 24f)
+            cornerRadius = CornerRadius(u * 0.04f, u * 0.04f)
         )
         // Cabin roof overhang
         drawRoundRect(
             color = Color(0xFF3E4098),
-            topLeft = Offset(cabinLeft - w * 0.016f, cabinTop - h * 0.015f),
-            size = Size(cabinRight - cabinLeft + w * 0.025f, h * 0.055f),
-            cornerRadius = CornerRadius(28f, 28f)
+            topLeft = Offset(cabinLeft - u * 0.025f, cabinTop - u * 0.022f),
+            size = Size(cabinRight - cabinLeft + u * 0.04f, u * 0.072f),
+            cornerRadius = CornerRadius(u * 0.045f, u * 0.045f)
         )
-
         // Circular Porthole Window
-        val portholeCenter = Offset(w * 0.922f, h * 0.635f)
-        val portholeOuterR = min(w, h) * 0.095f
+        val portholeCenter = Offset(cabinLeft + u * 0.16f, cabinTop + u * 0.185f)
+        val portholeOuterR = u * 0.105f
         drawCircle(
             color = Color(0xFF282268),
             radius = portholeOuterR,
@@ -812,7 +783,6 @@ private fun DrawScope.drawHeadspaceHarborCats(t: Float) {
             radius = portholeOuterR * 0.72f,
             center = portholeCenter
         )
-
         // Porthole bolts
         for (b in 0 until 8) {
             val ang = (b * 45.0) * PI / 180.0
@@ -820,11 +790,10 @@ private fun DrawScope.drawHeadspaceHarborCats(t: Float) {
             val by = portholeCenter.y + sin(ang).toFloat() * portholeOuterR * 0.80f
             drawCircle(
                 color = Color(0xFF3E4098),
-                radius = 3.5f,
+                radius = u * 0.0055f,
                 center = Offset(bx, by)
             )
         }
-
         // Cute cyan cat inside the porthole
         val innerCatCenter = Offset(portholeCenter.x, portholeCenter.y + portholeOuterR * 0.16f)
         val innerR = portholeOuterR * 0.52f
@@ -833,7 +802,6 @@ private fun DrawScope.drawHeadspaceHarborCats(t: Float) {
             radius = innerR,
             center = innerCatCenter
         )
-        // Porthole cat ears
         val earPath = Path().apply {
             moveTo(innerCatCenter.x - innerR * 0.85f, innerCatCenter.y - innerR * 0.35f)
             lineTo(innerCatCenter.x - innerR * 0.65f, innerCatCenter.y - innerR * 1.15f)
@@ -845,162 +813,155 @@ private fun DrawScope.drawHeadspaceHarborCats(t: Float) {
         drawPath(earPath, color = Color(0xFF5CE1E6))
         drawSleepingCatFace(
             center = Offset(innerCatCenter.x, innerCatCenter.y - innerR * 0.25f),
-            scale = w * 0.00075f,
+            scale = u * 0.0011f,
             strokeColor = Color(0xFF282268)
         )
-
-        // Sleeping cyan cat lounging on top of the cabin roof with dangling paws & tail
-        val roofCatX = w * 0.90f
-        val roofCatY = cabinTop - h * 0.01f
-        // Body oval
+        // Sleeping cyan cat lounging on top of the cabin roof (sized in `u`)
+        val roofCatX = cabinLeft + u * 0.12f
+        val roofCatY = cabinTop - u * 0.015f
+        val rCatW = u * 0.21f
+        val rCatH = u * 0.115f
         drawRoundRect(
             color = Color(0xFF5CE1E6),
-            topLeft = Offset(roofCatX - w * 0.052f, roofCatY - h * 0.085f),
-            size = Size(w * 0.135f, h * 0.085f),
-            cornerRadius = CornerRadius(45f, 45f)
+            topLeft = Offset(roofCatX - rCatW * 0.38f, roofCatY - rCatH),
+            size = Size(rCatW, rCatH),
+            cornerRadius = CornerRadius(rCatH * 0.55f, rCatH * 0.55f)
         )
         // Subtle darker teal spot on back
         drawOval(
             color = Color(0xFF38B6C4),
-            topLeft = Offset(roofCatX + w * 0.035f, roofCatY - h * 0.085f),
-            size = Size(w * 0.038f, h * 0.042f)
+            topLeft = Offset(roofCatX + rCatW * 0.22f, roofCatY - rCatH * 0.98f),
+            size = Size(rCatW * 0.28f, rCatH * 0.48f)
         )
-        // Dangling front paws & tail
+        // Dangling front paws & swaying tail
         drawLine(
             color = Color(0xFF5CE1E6),
-            start = Offset(roofCatX - w * 0.045f, roofCatY - h * 0.015f),
-            end = Offset(roofCatX - w * 0.062f, roofCatY + h * 0.032f),
-            strokeWidth = w * 0.016f,
+            start = Offset(roofCatX - rCatW * 0.32f, roofCatY - rCatH * 0.2f),
+            end = Offset(roofCatX - rCatW * 0.44f, roofCatY + rCatH * 0.38f),
+            strokeWidth = u * 0.025f,
             cap = StrokeCap.Round
         )
         drawLine(
             color = Color(0xFF5CE1E6),
-            start = Offset(roofCatX - w * 0.008f, roofCatY - h * 0.015f),
-            end = Offset(roofCatX - w * 0.005f, roofCatY + h * 0.042f),
-            strokeWidth = w * 0.016f,
+            start = Offset(roofCatX - rCatW * 0.05f, roofCatY - rCatH * 0.2f),
+            end = Offset(roofCatX - rCatW * 0.03f, roofCatY + rCatH * 0.48f),
+            strokeWidth = u * 0.025f,
             cap = StrokeCap.Round
         )
-        // Swaying dangling tail on the right
-        val roofTailSway = sin(t * 1.7f) * 8f
+        val roofTailSway = sin(t * 1.7f) * (u * 0.012f)
         drawLine(
             color = Color(0xFF5CE1E6),
-            start = Offset(roofCatX + w * 0.075f, roofCatY - h * 0.025f),
-            end = Offset(roofCatX + w * 0.072f + roofTailSway, roofCatY + h * 0.075f),
-            strokeWidth = w * 0.017f,
+            start = Offset(roofCatX + rCatW * 0.54f, roofCatY - rCatH * 0.3f),
+            end = Offset(roofCatX + rCatW * 0.52f + roofTailSway, roofCatY + rCatH * 0.85f),
+            strokeWidth = u * 0.026f,
             cap = StrokeCap.Round
         )
         // Roof cat head & ears
-        val roofHeadCenter = Offset(roofCatX - w * 0.026f, roofCatY - h * 0.052f)
+        val roofHeadCenter = Offset(roofCatX - rCatW * 0.18f, roofCatY - rCatH * 0.62f)
         val roofEarPath = Path().apply {
-            moveTo(roofHeadCenter.x - w * 0.025f, roofHeadCenter.y - h * 0.025f)
-            lineTo(roofHeadCenter.x - w * 0.022f, roofHeadCenter.y - h * 0.065f)
-            lineTo(roofHeadCenter.x - w * 0.004f, roofHeadCenter.y - h * 0.038f)
-            moveTo(roofHeadCenter.x + w * 0.006f, roofHeadCenter.y - h * 0.038f)
-            lineTo(roofHeadCenter.x + w * 0.028f, roofHeadCenter.y - h * 0.065f)
-            lineTo(roofHeadCenter.x + w * 0.030f, roofHeadCenter.y - h * 0.025f)
+            moveTo(roofHeadCenter.x - u * 0.038f, roofHeadCenter.y - u * 0.032f)
+            lineTo(roofHeadCenter.x - u * 0.034f, roofHeadCenter.y - u * 0.088f)
+            lineTo(roofHeadCenter.x - u * 0.006f, roofHeadCenter.y - u * 0.052f)
+            moveTo(roofHeadCenter.x + u * 0.008f, roofHeadCenter.y - u * 0.052f)
+            lineTo(roofHeadCenter.x + u * 0.042f, roofHeadCenter.y - u * 0.088f)
+            lineTo(roofHeadCenter.x + u * 0.045f, roofHeadCenter.y - u * 0.032f)
         }
         drawPath(roofEarPath, color = Color(0xFF5CE1E6))
         drawSleepingCatFace(
-            center = Offset(roofHeadCenter.x + w * 0.002f, roofHeadCenter.y - h * 0.005f),
-            scale = w * 0.00075f,
+            center = Offset(roofHeadCenter.x + u * 0.003f, roofHeadCenter.y - u * 0.006f),
+            scale = u * 0.0011f,
             strokeColor = Color(0xFF282268)
         )
-
-        // Boat Hull curving up toward the bow
+        // Boat Hull curving up toward the bow (sized in `u`)
+        val bowX = cabinLeft - u * 0.18f
+        val bowTopY = boatWaterlineY - u * 0.09f
+        val hullBottomY = boatWaterlineY + u * 0.19f
         val hullPath = Path().apply {
-            moveTo(w * 0.70f, h * 0.68f)
-            quadraticBezierTo(w * 0.85f, h * 0.75f, w * 1.04f, h * 0.735f)
-            lineTo(w * 1.04f, h * 0.89f)
-            lineTo(w * 0.75f, h * 0.885f)
+            moveTo(bowX, bowTopY)
+            quadraticBezierTo(cabinLeft + u * 0.05f, boatWaterlineY + u * 0.015f, w * 1.05f, boatWaterlineY)
+            lineTo(w * 1.05f, hullBottomY)
+            lineTo(bowX + u * 0.07f, hullBottomY)
             close()
         }
         drawPath(hullPath, color = Color(0xFF5860C2))
-
         // Top gunwale rim along the hull
         val rimPath = Path().apply {
-            moveTo(w * 0.695f, h * 0.678f)
-            quadraticBezierTo(w * 0.85f, h * 0.748f, w * 1.04f, h * 0.733f)
+            moveTo(bowX - u * 0.01f, bowTopY)
+            quadraticBezierTo(cabinLeft + u * 0.05f, boatWaterlineY + u * 0.012f, w * 1.05f, boatWaterlineY - u * 0.004f)
         }
         drawPath(
             path = rimPath,
             color = Color(0xFF4246A2),
-            style = Stroke(width = h * 0.032f, cap = StrokeCap.Round)
+            style = Stroke(width = u * 0.042f, cap = StrokeCap.Round)
         )
     }
 }
-
-private fun DrawScope.drawHeadspaceNightFountain(t: Float) {
+private fun DrawScope.drawHeadspaceNightFountainPortrait(t: Float) {
     val w = size.width
     val h = size.height
-
-    // Deep indigo background wall & diagonal courtyard floor matching image_ae3d5e.jpg
+    val u = min(w, h)
+    // Deep indigo background wall & diagonal courtyard floor
     drawRect(color = Color(0xFF231768))
-
+    val wallSplitLeftY = h * 0.34f
+    val wallSplitRightY = h * 0.20f
     val courtyardFloor = Path().apply {
-        moveTo(0f, h * 0.29f)
-        lineTo(w, h * 0.08f)
+        moveTo(0f, wallSplitLeftY)
+        lineTo(w, wallSplitRightY)
         lineTo(w, h)
         lineTo(0f, h)
         close()
     }
     drawPath(courtyardFloor, color = Color(0xFF4B2E99))
-
     // Prowling blue cat walking across the upper-left courtyard with long dramatic shadow
     val walkCycle = (t * 0.065f) % 1f
-    val catX = w * (0.12f + 0.36f * sin(walkCycle * PI.toFloat()))
-    val catY = h * (0.33f - 0.05f * sin(walkCycle * PI.toFloat()))
+    val catX = w * (0.18f + 0.42f * sin(walkCycle * PI.toFloat()))
+    val catY = wallSplitLeftY + u * 0.05f - u * 0.06f * sin(walkCycle * PI.toFloat())
     val stepPhase = t * 5.2f
-
-    // Long angled shadow cast to the bottom-left
+    // Long angled shadow cast to the bottom-left (scaled by `u`)
     val shadowPath = Path().apply {
-        moveTo(catX - w * 0.045f, catY + h * 0.025f)
-        lineTo(catX + w * 0.055f, catY + h * 0.012f)
-        lineTo(0f, catY + h * 0.14f)
-        lineTo(0f, catY + h * 0.065f)
+        moveTo(catX - u * 0.055f, catY + u * 0.038f)
+        lineTo(catX + u * 0.065f, catY + u * 0.022f)
+        lineTo(0f, catY + u * 0.19f)
+        lineTo(0f, catY + u * 0.095f)
         close()
     }
     drawPath(shadowPath, color = Color(0xFF28196E))
-
-    // Walking cat legs, arched body, raised tail, and lowered curious head
+    // Walking cat legs, arched body, raised tail, and lowered curious head (1:1 `u` scale)
     drawWalkingCourtyardCat(
         center = Offset(catX, catY),
-        scale = min(w, h) * 0.0014f,
+        scale = u * 0.00145f,
         stepPhase = stepPhase
     )
-
-    // 3-Tier Courtyard Fountain on the right
-    val fCenterX = w * 0.705f
-    val baseCenterY = h * 0.64f
-    val baseRx = w * 0.34f
-    val baseRy = h * 0.24f
-
+    // 3-Tier Courtyard Fountain centered naturally in the portrait courtyard
+    // All radii and tier heights use `u` so ellipses keep true 3D perspective!
+    val fCenterX = w * 0.56f
+    val baseCenterY = h * 0.68f
+    val baseRx = u * 0.42f
+    val baseRy = baseRx * 0.48f
     // Fountain cast shadow on the purple ground
     drawOval(
         color = Color(0xFF28196E),
-        topLeft = Offset(fCenterX - baseRx * 1.32f, baseCenterY - baseRy * 0.45f),
-        size = Size(baseRx * 2.15f, baseRy * 1.95f)
+        topLeft = Offset(fCenterX - baseRx * 1.28f, baseCenterY - baseRy * 0.35f),
+        size = Size(baseRx * 2.10f, baseRy * 1.85f)
     )
-
     // Lower basin outer cylinder wall
     val basinWallPath = Path().apply {
         moveTo(fCenterX - baseRx * 0.94f, baseCenterY)
-        lineTo(fCenterX - baseRx * 0.86f, baseCenterY + baseRy * 0.95f)
+        lineTo(fCenterX - baseRx * 0.86f, baseCenterY + baseRy * 0.92f)
         quadraticBezierTo(
-            fCenterX, baseCenterY + baseRy * 1.55f,
-            fCenterX + baseRx * 0.86f, baseCenterY + baseRy * 0.95f
+            fCenterX, baseCenterY + baseRy * 1.50f,
+            fCenterX + baseRx * 0.86f, baseCenterY + baseRy * 0.92f
         )
         lineTo(fCenterX + baseRx * 0.94f, baseCenterY)
         close()
     }
     drawPath(basinWallPath, color = Color(0xFF5D3C9E))
-
     // Lower basin rim outer ellipse
     drawOval(
         color = Color(0xFF7D58C2),
         topLeft = Offset(fCenterX - baseRx, baseCenterY - baseRy * 0.85f),
         size = Size(baseRx * 2f, baseRy * 1.7f)
     )
-
     // Lower basin vibrant blue water pool
     val poolRx = baseRx * 0.84f
     val poolRy = baseRy * 0.68f
@@ -1009,7 +970,6 @@ private fun DrawScope.drawHeadspaceNightFountain(t: Float) {
         topLeft = Offset(fCenterX - poolRx, baseCenterY - poolRy),
         size = Size(poolRx * 2f, poolRy * 2f)
     )
-
     // Animated expanding cyan foam ripples in the main pool
     val splashPulse = 1f + 0.06f * sin(t * 3.4f)
     drawOval(
@@ -1026,13 +986,14 @@ private fun DrawScope.drawHeadspaceNightFountain(t: Float) {
         val lobePulse = 1f + 0.12f * sin(t * 4f + i)
         val lx = fCenterX - poolRx * 0.08f + cos(ang) * poolRx * 0.28f
         val ly = baseCenterY + sin(ang) * poolRy * 0.24f
+        val lobeW = u * 0.095f * lobePulse
+        val lobeH = lobeW * 0.52f
         drawOval(
             color = Color(0xFF25B7FF),
-            topLeft = Offset(lx - 42f * lobePulse, ly - 22f * lobePulse),
-            size = Size(84f * lobePulse, 44f * lobePulse)
+            topLeft = Offset(lx - lobeW * 0.5f, ly - lobeH * 0.5f),
+            size = Size(lobeW, lobeH)
         )
     }
-
     // Floating animated water droplets/ripples in the pool
     val rippleBubbles = listOf(
         Triple(-0.62f, -0.05f, 1.3f),
@@ -1042,41 +1003,41 @@ private fun DrawScope.drawHeadspaceNightFountain(t: Float) {
         Triple(-0.18f, 0.52f, 0.5f)
     )
     rippleBubbles.forEachIndexed { idx, (rx, ry, rScale) ->
-        val bob = sin(t * 2.5f + idx) * 5f
+        val bob = sin(t * 2.5f + idx) * (u * 0.005f)
+        val bw = u * 0.055f * rScale
+        val bh = bw * 0.50f
         drawOval(
             color = Color(0xFF25B7FF).copy(alpha = 0.85f),
             topLeft = Offset(
-                fCenterX + poolRx * rx - 24f * rScale,
-                baseCenterY + poolRy * ry - 12f * rScale + bob
+                fCenterX + poolRx * rx - bw * 0.5f,
+                baseCenterY + poolRy * ry - bh * 0.5f + bob
             ),
-            size = Size(48f * rScale, 24f * rScale)
+            size = Size(bw, bh)
         )
     }
-
-    // Center pedestal column between Tier 1 (bottom) and Tier 2 (middle)
-    val midCenterY = h * 0.31f
+    // Center pedestal column between Tier 1 (bottom) and Tier 2 (middle) — spaced in `u`!
+    val midCenterY = baseCenterY - u * 0.34f
     val colPath = Path().apply {
-        moveTo(fCenterX - w * 0.032f, midCenterY + h * 0.09f)
-        lineTo(fCenterX + w * 0.032f, midCenterY + h * 0.09f)
-        lineTo(fCenterX + w * 0.045f, baseCenterY - h * 0.02f)
+        moveTo(fCenterX - u * 0.042f, midCenterY + u * 0.06f)
+        lineTo(fCenterX + u * 0.042f, midCenterY + u * 0.06f)
+        lineTo(fCenterX + u * 0.058f, baseCenterY - u * 0.02f)
         quadraticBezierTo(
-            fCenterX, baseCenterY + h * 0.01f,
-            fCenterX - w * 0.045f, baseCenterY - h * 0.02f
+            fCenterX, baseCenterY + u * 0.015f,
+            fCenterX - u * 0.058f, baseCenterY - u * 0.02f
         )
         close()
     }
     drawPath(colPath, color = Color(0xFF7D58C2))
-
     // Middle tier bowl
-    val midRx = w * 0.115f
-    val midRy = h * 0.068f
+    val midRx = u * 0.16f
+    val midRy = midRx * 0.46f
     drawArc(
         color = Color(0xFF6B48B0),
         startAngle = 0f,
         sweepAngle = 180f,
         useCenter = true,
         topLeft = Offset(fCenterX - midRx, midCenterY - midRy * 0.4f),
-        size = Size(midRx * 2f, midRy * 2.6f)
+        size = Size(midRx * 2f, midRy * 2.5f)
     )
     drawOval(
         color = Color(0xFF8B65D4),
@@ -1088,25 +1049,23 @@ private fun DrawScope.drawHeadspaceNightFountain(t: Float) {
         topLeft = Offset(fCenterX - midRx * 0.84f, midCenterY - midRy * 0.78f),
         size = Size(midRx * 1.68f, midRy * 1.38f)
     )
-
-    // Upper pedestal column between Tier 2 and Tier 3 (top)
-    val topCenterY = h * 0.145f
+    // Upper pedestal column between Tier 2 and Tier 3 (top) — spaced in `u`!
+    val topCenterY = midCenterY - u * 0.20f
     drawRect(
         color = Color(0xFF6B48B0),
-        topLeft = Offset(fCenterX - w * 0.018f, topCenterY + h * 0.03f),
-        size = Size(w * 0.036f, midCenterY - topCenterY - h * 0.03f)
+        topLeft = Offset(fCenterX - u * 0.024f, topCenterY + u * 0.025f),
+        size = Size(u * 0.048f, midCenterY - topCenterY - u * 0.025f)
     )
-
     // Top tier bowl
-    val topRx = w * 0.065f
-    val topRy = h * 0.038f
+    val topRx = u * 0.095f
+    val topRy = topRx * 0.46f
     drawArc(
         color = Color(0xFF6B48B0),
         startAngle = 0f,
         sweepAngle = 180f,
         useCenter = true,
         topLeft = Offset(fCenterX - topRx, topCenterY - topRy * 0.3f),
-        size = Size(topRx * 2f, topRy * 2.5f)
+        size = Size(topRx * 2f, topRy * 2.4f)
     )
     drawOval(
         color = Color(0xFF8B65D4),
@@ -1121,12 +1080,11 @@ private fun DrawScope.drawHeadspaceNightFountain(t: Float) {
     // Top nozzle spout
     drawOval(
         color = Color(0xFF8B65D4),
-        topLeft = Offset(fCenterX - w * 0.015f, topCenterY - topRy * 1.15f),
-        size = Size(w * 0.03f, h * 0.025f)
+        topLeft = Offset(fCenterX - u * 0.022f, topCenterY - topRy * 1.15f),
+        size = Size(u * 0.044f, u * 0.028f)
     )
-
     // Animated cascading water streams (Top -> Middle, and Middle -> Main Basin)
-    val streamShimmer = sin(t * 6f) * 3.5f
+    val streamShimmer = sin(t * 6f) * (u * 0.004f)
     val upperCascade = Path().apply {
         moveTo(fCenterX - topRx * 0.62f, topCenterY + topRy * 0.25f)
         lineTo(fCenterX - topRx * 0.32f, topCenterY + topRy * 0.38f)
@@ -1139,7 +1097,6 @@ private fun DrawScope.drawHeadspaceNightFountain(t: Float) {
         close()
     }
     drawPath(upperCascade, color = Color(0xFF25B7FF))
-
     val lowerCascade = Path().apply {
         moveTo(fCenterX - midRx * 0.78f, midCenterY + midRy * 0.05f)
         lineTo(fCenterX - midRx * 0.35f, midCenterY + midRy * 0.35f)
@@ -1152,22 +1109,20 @@ private fun DrawScope.drawHeadspaceNightFountain(t: Float) {
         close()
     }
     drawPath(lowerCascade, color = Color(0xFF25B7FF))
-
     // Animated vertical water shimmer streaks inside the cascades
     for (s in 0..3) {
         val prog = ((t * 1.8f + s * 0.25f) % 1f)
         val sy1 = midCenterY + midRy * 0.3f + prog * (baseCenterY - midCenterY - baseRy * 0.25f)
-        val sx1 = fCenterX - midRx * (0.62f + 0.18f * prog) + (s - 1.5f) * 6f
+        val sx1 = fCenterX - midRx * (0.62f + 0.18f * prog) + (s - 1.5f) * (u * 0.008f)
         drawLine(
             color = Color(0xFF7CE0FF).copy(alpha = 0.75f * (1f - prog)),
             start = Offset(sx1, sy1),
-            end = Offset(sx1 - 3f, sy1 + 18f),
-            strokeWidth = 3f,
+            end = Offset(sx1 - u * 0.004f, sy1 + u * 0.024f),
+            strokeWidth = u * 0.004f,
             cap = StrokeCap.Round
         )
     }
 }
-
 private fun DrawScope.drawWalkingCourtyardCat(
     center: Offset,
     scale: Float,
@@ -1177,7 +1132,6 @@ private fun DrawScope.drawWalkingCourtyardCat(
     val headLightBlue = Color(0xFF2585FF)
     val legSwing1 = sin(stepPhase) * 14f * scale
     val legSwing2 = cos(stepPhase) * 14f * scale
-
     // Back legs
     drawLine(
         color = bodyBlue,
@@ -1201,7 +1155,6 @@ private fun DrawScope.drawWalkingCourtyardCat(
         strokeWidth = 8.5f * scale,
         cap = StrokeCap.Round
     )
-
     // Perky curved tail
     val tailPath = Path().apply {
         moveTo(center.x - 28f * scale, center.y - 14f * scale)
@@ -1216,8 +1169,7 @@ private fun DrawScope.drawWalkingCourtyardCat(
         color = bodyBlue,
         style = Stroke(width = 8f * scale, cap = StrokeCap.Round)
     )
-
-    // Arched torso (two-tone blue like image_ae3d5e.jpg)
+    // Arched torso
     val torsoPath = Path().apply {
         moveTo(center.x - 34f * scale, center.y - 6f * scale)
         quadraticBezierTo(
@@ -1231,8 +1183,7 @@ private fun DrawScope.drawWalkingCourtyardCat(
         close()
     }
     drawPath(torsoPath, color = bodyBlue)
-
-    // Lowered curious head & shoulders
+    // Lowered curious head & ears
     drawCircle(
         color = headLightBlue,
         radius = 16f * scale,
@@ -1246,15 +1197,9 @@ private fun DrawScope.drawWalkingCourtyardCat(
     }
     drawPath(earPath, color = headLightBlue)
 }
-
 // ============================================================================
-// SCENE 2: CLOUD & RAIN FULLSCREEN ANIMATION
-// - Clouds moving slowly across the sky in multi-depth layers
-// - Raining with small water-like bubbles AND/OR straight-line rain streaks
-//   (also includes atmospheric bokeh particles inspired by the uploaded video)
-// - Ground puddle surface with expanding rain splash ripples
+// SCENE 3: CLOUD & RAIN FULLSCREEN ANIMATION (PORTRAIT-OPTIMIZED)
 // ============================================================================
-
 private data class RainParticleSpec(
     val xSeed: Float,
     val ySeed: Float,
@@ -1263,7 +1208,6 @@ private data class RainParticleSpec(
     val isBubble: Boolean,
     val depthLayer: Int
 )
-
 @Composable
 fun CloudAndRainFullscreenScene(
     rainMode: RainStyleMode = RainStyleMode.STREAKS_AND_BUBBLES,
@@ -1285,12 +1229,11 @@ fun CloudAndRainFullscreenScene(
             )
         }
     }
-
     Canvas(modifier = modifier.fillMaxSize()) {
         val w = size.width
         val h = size.height
-
-        // Moody atmospheric rain sky gradient with soft top-left light beam (inspired by video)
+        val u = min(w, h)
+        // Moody atmospheric rain sky gradient
         drawRect(
             brush = Brush.verticalGradient(
                 colors = listOf(
@@ -1301,8 +1244,9 @@ fun CloudAndRainFullscreenScene(
                 )
             )
         )
-
         // Subtle volumetric light glow in the upper-left corner
+        val glowCenter = Offset(w * 0.15f, h * 0.12f)
+        val glowRadius = u * 0.85f
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(
@@ -1310,43 +1254,40 @@ fun CloudAndRainFullscreenScene(
                     Color(0x2281D4FA),
                     Color.Transparent
                 ),
-                center = Offset(w * 0.12f, h * 0.08f),
-                radius = max(w, h) * 0.55f
+                center = glowCenter,
+                radius = glowRadius
             ),
-            radius = max(w, h) * 0.55f,
-            center = Offset(w * 0.12f, h * 0.08f)
+            radius = glowRadius,
+            center = glowCenter
         )
-
-        // Back layer slow-drifting rain clouds
+        // Back layer slow-drifting rain clouds (proportioned by `u`)
         drawDriftingCloudCluster(
-            cx = ((w * 0.18f + t * 11f) % (w * 1.35f)) - w * 0.18f,
-            cy = h * 0.16f,
-            scale = w * 0.0012f,
+            cx = ((w * 0.18f + t * (u * 0.022f)) % (w + u * 0.5f)) - u * 0.25f,
+            cy = h * 0.19f,
+            scale = u * 0.0014f,
             color = Color(0xFF324B6B).copy(alpha = 0.85f)
         )
         drawDriftingCloudCluster(
-            cx = ((w * 0.72f + t * 9f) % (w * 1.35f)) - w * 0.18f,
-            cy = h * 0.21f,
-            scale = w * 0.00145f,
+            cx = ((w * 0.72f + t * (u * 0.018f)) % (w + u * 0.5f)) - u * 0.25f,
+            cy = h * 0.25f,
+            scale = u * 0.0016f,
             color = Color(0xFF2B425E).copy(alpha = 0.9f)
         )
-
         // Mid layer slow-drifting clouds
         drawDriftingCloudCluster(
-            cx = ((w * 0.45f + t * 17f) % (w * 1.4f)) - w * 0.2f,
-            cy = h * 0.13f,
-            scale = w * 0.0016f,
+            cx = ((w * 0.45f + t * (u * 0.032f)) % (w + u * 0.55f)) - u * 0.27f,
+            cy = h * 0.16f,
+            scale = u * 0.00175f,
             color = Color(0xFF47668A).copy(alpha = 0.92f)
         )
         drawDriftingCloudCluster(
-            cx = ((w * 0.95f + t * 15f) % (w * 1.4f)) - w * 0.2f,
-            cy = h * 0.19f,
-            scale = w * 0.00135f,
+            cx = ((w * 0.92f + t * (u * 0.028f)) % (w + u * 0.55f)) - u * 0.27f,
+            cy = h * 0.22f,
+            scale = u * 0.0015f,
             color = Color(0xFF3E5B7D).copy(alpha = 0.9f)
         )
-
         // Calm wet reflection ground / water plane at the bottom
-        val puddleTop = h * 0.84f
+        val puddleTop = h * 0.82f
         drawRect(
             brush = Brush.verticalGradient(
                 colors = listOf(
@@ -1359,32 +1300,27 @@ fun CloudAndRainFullscreenScene(
             topLeft = Offset(0f, puddleTop),
             size = Size(w, h - puddleTop)
         )
-
         // Rain particles: Straight rain streaks & small water-like bubble droplets
-        val windSlant = w * 0.065f
+        val windSlant = u * 0.08f
         particles.forEachIndexed { idx, p ->
             val progress = (p.ySeed + t * p.speed) % 1f
             val curY = h * 0.14f + progress * (puddleTop - h * 0.12f)
-            val baseX = ((p.xSeed * w + progress * windSlant + t * 12f) % (w * 1.1f)) - w * 0.05f
-
+            val baseX = ((p.xSeed * w + progress * windSlant + t * (u * 0.02f)) % (w * 1.1f)) - w * 0.05f
             val drawAsBubble = when (rainMode) {
                 RainStyleMode.STRAIGHT_LINES -> false
                 RainStyleMode.WATER_BUBBLES -> true
                 RainStyleMode.STREAKS_AND_BUBBLES -> p.isBubble
             }
-
             val alphaByDepth = when (p.depthLayer) {
                 0 -> 0.35f
                 1 -> 0.62f
                 else -> 0.88f
             }
-
             if (drawAsBubble) {
-                // Water-like translucent bubble droplet with specular highlight
-                val radius = (3.2f + p.sizeFactor * 5.2f) * (0.75f + p.depthLayer * 0.2f)
-                val wobbleX = sin(t * 4f + idx) * 2.5f
+                // Water-like translucent bubble droplet with specular highlight (proportioned in `u`)
+                val radius = u * (0.0045f + p.sizeFactor * 0.0065f) * (0.75f + p.depthLayer * 0.2f)
+                val wobbleX = sin(t * 4f + idx) * (u * 0.004f)
                 val bubbleCenter = Offset(baseX + wobbleX, curY)
-
                 drawCircle(
                     color = Color(0xFF90CAF9).copy(alpha = alphaByDepth * 0.42f),
                     radius = radius,
@@ -1394,9 +1330,8 @@ fun CloudAndRainFullscreenScene(
                     color = Color(0xFFE3F2FD).copy(alpha = alphaByDepth * 0.85f),
                     radius = radius,
                     center = bubbleCenter,
-                    style = Stroke(width = 1.4f)
+                    style = Stroke(width = max(1.2f, u * 0.002f))
                 )
-                // Inner water bubble specular glint
                 drawCircle(
                     color = Color.White.copy(alpha = alphaByDepth),
                     radius = radius * 0.28f,
@@ -1404,7 +1339,7 @@ fun CloudAndRainFullscreenScene(
                 )
             } else {
                 // Straight slanted rain line streak
-                val streakLen = (18f + p.sizeFactor * 26f) * (0.8f + p.depthLayer * 0.22f)
+                val streakLen = u * (0.028f + p.sizeFactor * 0.038f) * (0.8f + p.depthLayer * 0.22f)
                 val dx = streakLen * 0.14f
                 drawLine(
                     brush = Brush.linearGradient(
@@ -1417,17 +1352,16 @@ fun CloudAndRainFullscreenScene(
                     ),
                     start = Offset(baseX - dx, curY - streakLen),
                     end = Offset(baseX, curY),
-                    strokeWidth = 1.6f + p.depthLayer * 0.65f,
+                    strokeWidth = max(1.4f, u * (0.0022f + p.depthLayer * 0.0009f)),
                     cap = StrokeCap.Round
                 )
             }
-
-            // Splash rings & tiny water bead bounce when drops hit the puddle surface
+            // Splash rings & tiny water bead bounce on the puddle surface (proportioned in `u`)
             if (idx % 5 == 0) {
                 val rippleAge = ((t * p.speed * 1.4f + p.xSeed * 3f) % 1f)
                 val rx = (p.xSeed * w * 0.92f) + w * 0.04f
-                val ry = puddleTop + (idx % 7) * (h * 0.018f)
-                val maxRippleW = 28f * p.sizeFactor
+                val ry = puddleTop + (idx % 7) * ((h - puddleTop) * 0.12f)
+                val maxRippleW = u * 0.042f * p.sizeFactor
                 drawOval(
                     color = Color(0xFFB3E5FC).copy(alpha = (1f - rippleAge) * 0.55f),
                     topLeft = Offset(
@@ -1438,44 +1372,36 @@ fun CloudAndRainFullscreenScene(
                         maxRippleW * 2f * rippleAge,
                         maxRippleW * 0.56f * rippleAge
                     ),
-                    style = Stroke(width = 1.6f)
+                    style = Stroke(width = max(1.3f, u * 0.0022f))
                 )
                 if (rippleAge < 0.35f) {
-                    val bounceH = sin(rippleAge / 0.35f * PI.toFloat()) * 10f
+                    val bounceH = sin(rippleAge / 0.35f * PI.toFloat()) * (u * 0.015f)
                     drawCircle(
                         color = Color(0xFFE1F5FE).copy(alpha = 0.8f),
-                        radius = 2.4f,
+                        radius = u * 0.0035f,
                         center = Offset(rx, ry - bounceH)
                     )
                 }
             }
         }
-
-        // Foreground fluffy dark-blue cloud bank at the very top
+        // Foreground fluffy dark-blue cloud bank
         drawDriftingCloudCluster(
-            cx = ((w * 0.25f + t * 24f) % (w * 1.45f)) - w * 0.22f,
-            cy = h * 0.09f,
-            scale = w * 0.0018f,
+            cx = ((w * 0.25f + t * (u * 0.042f)) % (w + u * 0.6f)) - u * 0.3f,
+            cy = h * 0.13f,
+            scale = u * 0.0019f,
             color = Color(0xFF5A7CA3).copy(alpha = 0.95f)
         )
         drawDriftingCloudCluster(
-            cx = ((w * 0.82f + t * 21f) % (w * 1.45f)) - w * 0.22f,
-            cy = h * 0.11f,
-            scale = w * 0.00165f,
+            cx = ((w * 0.82f + t * (u * 0.036f)) % (w + u * 0.6f)) - u * 0.3f,
+            cy = h * 0.15f,
+            scale = u * 0.00175f,
             color = Color(0xFF517299).copy(alpha = 0.95f)
         )
     }
 }
-
 // ============================================================================
-// SCENE 3: WIND & WAVING TREE WITH INFINITE FALLING LEAVES & TIME-OF-DAY SKY
-// - One expressive tree waving in the wind on a rolling hill
-// - Leaves detach at intervals and blow in the wind out of the screen to the
-//   right in a continuous infinite loop
-// - Sky and cloud density smoothly transition across Sunshine, Afternoon,
-//   Cloudy, and Moonlit Night (or can be pinned via the HUD selector)
+// SCENE 4: WIND & WAVING TREE WITH INFINITE FALLING LEAVES (PORTRAIT-OPTIMIZED)
 // ============================================================================
-
 private data class BlowingLeafSpec(
     val startBranchIndex: Int,
     val phaseOffset: Float,
@@ -1484,7 +1410,6 @@ private data class BlowingLeafSpec(
     val sizeScale: Float,
     val verticalSpread: Float
 )
-
 @Composable
 fun WindTreeLeavesFullscreenScene(
     timeOfDayMode: TimeOfDayCycle = TimeOfDayCycle.AUTO_CYCLE,
@@ -1503,13 +1428,10 @@ fun WindTreeLeavesFullscreenScene(
             )
         }
     }
-
     Canvas(modifier = modifier.fillMaxSize()) {
         val w = size.width
         val h = size.height
-
-        // Continuous time-of-day cycle (0..4):
-        // 0 = Sunshine Morning, 1 = Warm Afternoon, 2 = Overcast Cloudy, 3 = Moonlit Night
+        val u = min(w, h)
         val cyclePos = when (timeOfDayMode) {
             TimeOfDayCycle.SUNSHINE_MORNING -> 0f
             TimeOfDayCycle.AFTERNOON_WARM -> 1f
@@ -1519,12 +1441,11 @@ fun WindTreeLeavesFullscreenScene(
         }
         val stageIndex = floor(cyclePos).toInt() % 4
         val stageFraction = cyclePos - floor(cyclePos)
-
         val skyTopColors = listOf(
-            Color(0xFF4FA8FF), // Sunshine Morning
-            Color(0xFFF57C51), // Warm Afternoon
-            Color(0xFF607D8B), // Cloudy Overcast
-            Color(0xFF14183E)  // Moonlit Night
+            Color(0xFF4FA8FF),
+            Color(0xFFF57C51),
+            Color(0xFF607D8B),
+            Color(0xFF14183E)
         )
         val skyBottomColors = listOf(
             Color(0xFFB3E5FC),
@@ -1544,19 +1465,14 @@ fun WindTreeLeavesFullscreenScene(
             Color(0xFF4CAF50),
             Color(0xFF4DB6AC)
         )
-
         val nextStage = (stageIndex + 1) % 4
         val topSky = lerpColor(skyTopColors[stageIndex], skyTopColors[nextStage], stageFraction)
         val bottomSky = lerpColor(skyBottomColors[stageIndex], skyBottomColors[nextStage], stageFraction)
         val hillColor = lerpColor(hillColors[stageIndex], hillColors[nextStage], stageFraction)
         val leafBaseColor = lerpColor(leafPalettes[stageIndex], leafPalettes[nextStage], stageFraction)
-
-        // Sky background gradient
         drawRect(
             brush = Brush.verticalGradient(colors = listOf(topSky, bottomSky))
         )
-
-        // Celestial bodies: Sun in Morning/Afternoon, Moon & Stars at Night
         val sunAlpha = when (stageIndex) {
             0 -> 1f
             1 -> 1f - stageFraction * 0.7f
@@ -1568,43 +1484,39 @@ fun WindTreeLeavesFullscreenScene(
             3 -> 1f - stageFraction
             else -> 0f
         }
-
         if (sunAlpha > 0.05f) {
-            val sunY = h * (0.20f + 0.12f * (1f - sunAlpha))
+            val sunY = h * 0.22f + u * 0.10f * (1f - sunAlpha)
             val sunCenter = Offset(w * 0.76f, sunY)
             drawCircle(
                 color = Color(0xFFFFF59D).copy(alpha = 0.28f * sunAlpha),
-                radius = min(w, h) * 0.13f,
+                radius = u * 0.14f,
                 center = sunCenter
             )
             drawCircle(
                 color = Color(0xFFFFEE58).copy(alpha = 0.92f * sunAlpha),
-                radius = min(w, h) * 0.072f,
+                radius = u * 0.078f,
                 center = sunCenter
             )
         }
-
         if (nightAlpha > 0.05f) {
-            // Twinkling night stars & crescent moon
             for (s in 0 until 18) {
                 val sx = ((s * 67 + 13) % 95) / 100f * w
                 val sy = ((s * 41 + 7) % 45) / 100f * h
                 val tw = (0.4f + 0.6f * sin(t * 2.5f + s)) * nightAlpha
                 drawCircle(
                     color = Color.White.copy(alpha = tw),
-                    radius = if (s % 3 == 0) 3f else 2f,
+                    radius = if (s % 3 == 0) u * 0.0045f else u * 0.003f,
                     center = Offset(sx, sy)
                 )
             }
             drawCrescentMoon(
-                center = Offset(w * 0.78f, h * 0.19f),
-                radius = min(w, h) * 0.065f,
+                center = Offset(w * 0.78f, h * 0.21f),
+                radius = u * 0.072f,
                 color = Color(0xFFFFF9C4).copy(alpha = nightAlpha),
                 shadowColor = topSky
             )
         }
-
-        // Dynamic cloud count & opacity depending on time/weather (extra cloudy in stage 2)
+        // Dynamic cloud count & opacity (proportioned in `u`)
         val cloudDensityAlpha = when (stageIndex) {
             0 -> 0.65f
             1 -> 0.55f + 0.4f * stageFraction
@@ -1613,68 +1525,62 @@ fun WindTreeLeavesFullscreenScene(
         }
         val cloudTint = lerpColor(Color.White, Color(0xFF90A4AE), if (stageIndex == 2) 0.55f else 0.15f)
             .copy(alpha = cloudDensityAlpha)
-
         val cloudCount = if (stageIndex == 2) 6 else 4
         for (c in 0 until cloudCount) {
-            val speed = 16f + c * 5f
-            val cx = ((w * (c * 0.24f) + t * speed) % (w * 1.45f)) - w * 0.22f
-            val cy = h * (0.12f + (c % 3) * 0.085f)
+            val speed = (u * 0.028f) + c * (u * 0.008f)
+            val cx = ((w * (c * 0.24f) + t * speed) % (w + u * 0.6f)) - u * 0.3f
+            val cy = h * (0.16f + (c % 3) * 0.075f)
             drawDriftingCloudCluster(
                 cx = cx,
                 cy = cy,
-                scale = w * (0.0011f + (c % 3) * 0.00025f),
+                scale = u * (0.00125f + (c % 3) * 0.00028f),
                 color = cloudTint
             )
         }
-
-        // Visible sweeping wind gust ribbons across the sky
+        // Visible sweeping wind gust ribbons across the sky (proportioned in `u`)
         for (g in 0..3) {
             val gustProg = ((t * 0.38f + g * 0.25f) % 1f)
-            val gx = -w * 0.2f + gustProg * (w * 1.3f)
-            val gy = h * (0.28f + g * 0.11f) + sin(t * 2f + g) * 14f
+            val gx = -u * 0.25f + gustProg * (w + u * 0.35f)
+            val gy = h * (0.32f + g * 0.09f) + sin(t * 2f + g) * (u * 0.022f)
             val gustAlpha = sin(gustProg * PI.toFloat()) * 0.32f
             val gustPath = Path().apply {
                 moveTo(gx, gy)
                 cubicTo(
-                    gx + w * 0.08f, gy - 18f,
-                    gx + w * 0.16f, gy + 18f,
-                    gx + w * 0.24f, gy - 4f
+                    gx + u * 0.10f, gy - u * 0.025f,
+                    gx + u * 0.20f, gy + u * 0.025f,
+                    gx + u * 0.30f, gy - u * 0.006f
                 )
             }
             drawPath(
                 path = gustPath,
                 color = Color.White.copy(alpha = gustAlpha),
-                style = Stroke(width = 3f, cap = StrokeCap.Round)
+                style = Stroke(width = u * 0.0045f, cap = StrokeCap.Round)
             )
         }
-
-        // Distant & foreground rolling hills
+        // Distant & foreground rolling hills (hill curves scaled by `u`, not `h`!)
+        val hillBaseY = h * 0.74f
         val backHill = Path().apply {
-            moveTo(0f, h * 0.76f)
-            quadraticBezierTo(w * 0.35f, h * 0.67f, w * 0.75f, h * 0.74f)
-            quadraticBezierTo(w * 0.90f, h * 0.77f, w, h * 0.73f)
+            moveTo(0f, hillBaseY)
+            quadraticBezierTo(w * 0.35f, hillBaseY - u * 0.14f, w * 0.75f, hillBaseY - u * 0.03f)
+            quadraticBezierTo(w * 0.90f, hillBaseY + u * 0.02f, w, hillBaseY - u * 0.04f)
             lineTo(w, h)
             lineTo(0f, h)
             close()
         }
         drawPath(backHill, color = hillColor.copy(alpha = 0.7f))
-
         val frontHill = Path().apply {
-            moveTo(0f, h * 0.78f)
-            quadraticBezierTo(w * 0.28f, h * 0.68f, w * 0.62f, h * 0.77f)
-            quadraticBezierTo(w * 0.84f, h * 0.82f, w, h * 0.79f)
+            moveTo(0f, hillBaseY + u * 0.03f)
+            quadraticBezierTo(w * 0.28f, hillBaseY - u * 0.12f, w * 0.62f, hillBaseY + u * 0.02f)
+            quadraticBezierTo(w * 0.84f, hillBaseY + u * 0.09f, w, hillBaseY + u * 0.04f)
             lineTo(w, h)
             lineTo(0f, h)
             close()
         }
         drawPath(frontHill, color = hillColor)
-
-        // Waving Tree positioned on the left-center crest so leaves have a long path to blow right
-        val treeBaseX = w * 0.26f
-        val treeBaseY = h * 0.76f
-        val treeHeight = min(w, h) * 0.44f
-
-        // Always blowing right with natural rhythmic wind gusts
+        // Waving Tree positioned on the left-center hill crest (proportioned in `u`)
+        val treeBaseX = w * 0.28f
+        val treeBaseY = hillBaseY - u * 0.02f
+        val treeHeight = u * 0.48f
         val windBend = 16f + 9f * sin(t * 1.85f) + 4f * sin(t * 3.9f)
         val canopyAnchors = drawSwayingWindTree(
             base = Offset(treeBaseX, treeBaseY),
@@ -1683,24 +1589,18 @@ fun WindTreeLeavesFullscreenScene(
             time = t,
             canopyBaseColor = leafBaseColor
         )
-
         // Infinite loop of detaching leaves blowing out of the screen to the right
         leaves.forEach { leaf ->
             val life = (t * 0.22f * leaf.speedMultiplier + leaf.phaseOffset) % 1f
             val origin = canopyAnchors[leaf.startBranchIndex % canopyAnchors.size]
-
-            // Travel from canopy anchor all the way past the right edge of the screen (w * 1.12f)
-            val travelX = origin.x + life * (w * 1.15f - origin.x)
-            val gravityDrop = (life * life) * (h * 0.26f)
-            val windLift = sin(life * PI.toFloat() * leaf.flutterFreq + t * 2f) * (h * 0.045f)
-            val travelY = origin.y + leaf.verticalSpread * (h * 0.14f) + gravityDrop + windLift
-
+            val travelX = origin.x + life * (w + u * 0.18f - origin.x)
+            val gravityDrop = (life * life) * (u * 0.34f)
+            val windLift = sin(life * PI.toFloat() * leaf.flutterFreq + t * 2f) * (u * 0.065f)
+            val travelY = origin.y + leaf.verticalSpread * (u * 0.20f) + gravityDrop + windLift
             val leafRotation = (t * 140f * leaf.speedMultiplier + leaf.phaseOffset * 360f) +
                     sin(t * 4f + leaf.phaseOffset * 10f) * 35f
-
             val fadeInAlpha = (life / 0.08f).coerceIn(0f, 1f)
-            val leafSize = 11f * leaf.sizeScale
-
+            val leafSize = u * 0.018f * leaf.sizeScale
             withTransform({
                 translate(left = travelX, top = travelY)
                 rotate(degrees = leafRotation, pivot = Offset.Zero)
@@ -1719,13 +1619,12 @@ fun WindTreeLeavesFullscreenScene(
                     color = Color(0xFF2E572C).copy(alpha = fadeInAlpha * 0.7f),
                     start = Offset(-leafSize * 0.8f, 0f),
                     end = Offset(leafSize * 0.8f, 0f),
-                    strokeWidth = 1.4f
+                    strokeWidth = max(1.2f, u * 0.0022f)
                 )
             }
         }
     }
 }
-
 private fun DrawScope.drawSwayingWindTree(
     base: Offset,
     trunkHeight: Float,
@@ -1735,7 +1634,6 @@ private fun DrawScope.drawSwayingWindTree(
 ): List<Offset> {
     val rad = (windAngleDeg - 90f) * (PI / 180.0).toFloat()
     val midRad = (windAngleDeg * 0.55f - 90f) * (PI / 180.0).toFloat()
-
     val midPoint = Offset(
         base.x + cos(midRad) * (trunkHeight * 0.52f),
         base.y + sin(midRad) * (trunkHeight * 0.52f)
@@ -1744,8 +1642,6 @@ private fun DrawScope.drawSwayingWindTree(
         midPoint.x + cos(rad) * (trunkHeight * 0.50f),
         midPoint.y + sin(rad) * (trunkHeight * 0.50f)
     )
-
-    // Tapered organic tree trunk curving in the wind
     val trunkW = trunkHeight * 0.13f
     val trunkPath = Path().apply {
         moveTo(base.x - trunkW * 0.6f, base.y)
@@ -1761,8 +1657,6 @@ private fun DrawScope.drawSwayingWindTree(
         close()
     }
     drawPath(trunkPath, color = Color(0xFF4E342E))
-
-    // Primary swaying branches & foliage clusters
     val branchConfigs = listOf(
         Triple(-32f, 0.42f, 0.78f),
         Triple(-12f, 0.48f, 0.92f),
@@ -1770,7 +1664,6 @@ private fun DrawScope.drawSwayingWindTree(
         Triple(26f, 0.46f, 0.88f),
         Triple(42f, 0.38f, 0.74f)
     )
-
     val canopyTips = mutableListOf<Offset>()
     branchConfigs.forEachIndexed { idx, (angleOffset, lenFactor, foliageScale) ->
         val localFlutter = sin(time * 2.8f + idx * 1.2f) * 4.5f
@@ -1785,7 +1678,6 @@ private fun DrawScope.drawSwayingWindTree(
             bStart.y + sin(bAngleRad) * bLen
         )
         canopyTips.add(bTip)
-
         drawLine(
             color = Color(0xFF4E342E),
             start = bStart,
@@ -1793,12 +1685,9 @@ private fun DrawScope.drawSwayingWindTree(
             strokeWidth = trunkW * 0.25f,
             cap = StrokeCap.Round
         )
-
-        // Layered leafy canopy puffs stretched slightly toward the wind direction
         val clusterR = trunkHeight * 0.24f * foliageScale
         val shadeColor = lerpColor(canopyBaseColor, Color(0xFF1B5E20), 0.32f)
         val highlightColor = lerpColor(canopyBaseColor, Color(0xFFFFF59D), 0.22f)
-
         drawCircle(
             color = shadeColor,
             radius = clusterR * 0.95f,
@@ -1815,27 +1704,22 @@ private fun DrawScope.drawSwayingWindTree(
             center = Offset(bTip.x + clusterR * 0.28f, bTip.y - clusterR * 0.12f)
         )
     }
-
     return canopyTips
 }
-
 // ============================================================================
-// SCENE 4: FOREST & BUSTLING GRASS FULLSCREEN ANIMATION
-// - Inspired by uploaded images (image_aea2f6.png, image_aea2f8.png, image_aea2fa.png)
-// - Rolling sunlit forest meadow with hundreds of individual curved grass blades
-//   organized in depth layers, bustling and rippling in traveling wind waves
+// SCENE 5: FOREST & BUSTLING GRASS FULLSCREEN ANIMATION (PORTRAIT-OPTIMIZED)
+// - Grass blade heights, widths, and sway amplitudes are all scaled by `u = min(w, h)`
+//   so blades look natural and lush on vertical phones rather than stretched!
 // ============================================================================
-
 private data class GrassBladeSpec(
     val xFraction: Float,
-    val baseYFraction: Float,
-    val heightFraction: Float,
-    val widthPx: Float,
+    val rowDepthOffset: Float,
+    val heightScale: Float,
+    val widthScale: Float,
     val naturalLean: Float,
     val phaseSeed: Float,
     val layer: Int
 )
-
 @Composable
 fun ForestBustlingGrassFullscreenScene(
     modifier: Modifier = Modifier
@@ -1843,31 +1727,25 @@ fun ForestBustlingGrassFullscreenScene(
     val t = rememberContinuousTimeSeconds()
     val grassBlades = remember {
         val list = mutableListOf<GrassBladeSpec>()
-        // 4 depth rows of dense lush grass blades from mid-ground to foreground
-        val countsPerLayer = listOf(85, 95, 110, 125)
+        val countsPerLayer = listOf(75, 85, 95, 110)
         countsPerLayer.forEachIndexed { layerIdx, count ->
             for (i in 0 until count) {
                 val xFrac = (i.toFloat() / count) + (((i * 37 + layerIdx * 19) % 100) / 100f - 0.5f) * 0.02f
-                val hVar = 0.75f + ((i * 53 + layerIdx * 29) % 100) / 100f * 0.55f
-                val baseYFrac = when (layerIdx) {
-                    0 -> 0.58f + ((i * 17) % 100) / 100f * 0.08f
-                    1 -> 0.68f + ((i * 23) % 100) / 100f * 0.09f
-                    2 -> 0.80f + ((i * 31) % 100) / 100f * 0.09f
-                    else -> 0.93f + ((i * 43) % 100) / 100f * 0.08f
-                }
-                val baseHeightFrac = when (layerIdx) {
-                    0 -> 0.11f
-                    1 -> 0.15f
-                    2 -> 0.20f
-                    else -> 0.27f
+                val hVar = 0.78f + ((i * 53 + layerIdx * 29) % 100) / 100f * 0.48f
+                val depthOff = ((i * 23 + layerIdx * 13) % 100) / 100f
+                val baseHScale = when (layerIdx) {
+                    0 -> 0.14f
+                    1 -> 0.18f
+                    2 -> 0.24f
+                    else -> 0.31f
                 }
                 list.add(
                     GrassBladeSpec(
                         xFraction = xFrac.coerceIn(-0.05f, 1.05f),
-                        baseYFraction = baseYFrac,
-                        heightFraction = baseHeightFrac * hVar,
-                        widthPx = (5.5f + layerIdx * 3.2f) * (0.8f + (i % 5) * 0.1f),
-                        naturalLean = ((i * 41) % 100 / 100f - 0.5f) * 28f,
+                        rowDepthOffset = depthOff,
+                        heightScale = baseHScale * hVar,
+                        widthScale = (0.009f + layerIdx * 0.0045f) * (0.85f + (i % 5) * 0.08f),
+                        naturalLean = ((i * 41) % 100 / 100f - 0.5f) * 0.045f,
                         phaseSeed = (i * 0.37f) + layerIdx * 1.3f,
                         layer = layerIdx
                     )
@@ -1876,11 +1754,10 @@ fun ForestBustlingGrassFullscreenScene(
         }
         list
     }
-
     Canvas(modifier = modifier.fillMaxSize()) {
         val w = size.width
         val h = size.height
-
+        val u = min(w, h)
         // Warm sunlit forest canopy background gradient
         drawRect(
             brush = Brush.verticalGradient(
@@ -1892,15 +1769,25 @@ fun ForestBustlingGrassFullscreenScene(
                 )
             )
         )
-
+        // Soft distant forest tree silhouettes in the upper meadow mist
+        for (treeIdx in 0..5) {
+            val tx = w * (0.08f + treeIdx * 0.18f)
+            val ty = h * 0.56f
+            val treeR = u * (0.14f + (treeIdx % 3) * 0.03f)
+            drawCircle(
+                color = Color(0x33558B2F),
+                radius = treeR,
+                center = Offset(tx, ty - treeR * 0.5f)
+            )
+        }
         // Soft sunbeams filtering into the forest meadow from the upper left
         for (ray in 0..3) {
-            val rayShift = sin(t * 0.45f + ray) * (w * 0.03f)
+            val rayShift = sin(t * 0.45f + ray) * (u * 0.03f)
             val rayPath = Path().apply {
                 moveTo(w * (0.08f + ray * 0.18f) + rayShift, 0f)
                 lineTo(w * (0.18f + ray * 0.18f) + rayShift, 0f)
-                lineTo(w * (0.42f + ray * 0.22f) + rayShift, h * 0.75f)
-                lineTo(w * (0.24f + ray * 0.22f) + rayShift, h * 0.75f)
+                lineTo(w * (0.42f + ray * 0.22f) + rayShift, h * 0.72f)
+                lineTo(w * (0.24f + ray * 0.22f) + rayShift, h * 0.72f)
                 close()
             }
             drawPath(
@@ -1908,99 +1795,88 @@ fun ForestBustlingGrassFullscreenScene(
                 color = Color(0x24FFFDE7)
             )
         }
-
-        // Rolling layered green meadow hills matching image_aea2f6.png
+        // Rolling layered green meadow hills (curve heights scaled by `u` so they don't stretch)
         val meadowLayers = listOf(
-            Triple(0.50f, Color(0xFF8BC34A), 0.03f),
-            Triple(0.62f, Color(0xFF7CB342), -0.025f),
-            Triple(0.75f, Color(0xFF558B2F), 0.02f),
-            Triple(0.88f, Color(0xFF2E5722), -0.015f)
+            Triple(0.56f, Color(0xFF8BC34A), 0.045f),
+            Triple(0.67f, Color(0xFF7CB342), -0.038f),
+            Triple(0.79f, Color(0xFF558B2F), 0.032f),
+            Triple(0.90f, Color(0xFF2E5722), -0.025f)
         )
-
-        meadowLayers.forEachIndexed { idx, (yFrac, hillCol, arch) ->
+        meadowLayers.forEachIndexed { idx, (yFrac, hillCol, archScale) ->
+            val layerTopY = h * yFrac
+            val archPx = u * archScale
             val hillPath = Path().apply {
-                moveTo(0f, h * yFrac)
+                moveTo(0f, layerTopY)
                 quadraticBezierTo(
-                    w * 0.32f, h * (yFrac + arch),
-                    w * 0.65f, h * (yFrac - arch * 0.6f)
+                    w * 0.32f, layerTopY + archPx,
+                    w * 0.65f, layerTopY - archPx * 0.6f
                 )
                 quadraticBezierTo(
-                    w * 0.85f, h * (yFrac + arch * 0.5f),
-                    w, h * yFrac
+                    w * 0.85f, layerTopY + archPx * 0.5f,
+                    w, layerTopY
                 )
                 lineTo(w, h)
                 lineTo(0f, h)
                 close()
             }
             drawPath(hillPath, color = hillCol)
-
-            // Draw all grass blades belonging to this depth layer
             val bladePalette = when (idx) {
                 0 -> listOf(Color(0xFF9CCC65), Color(0xFF7CB342), Color(0xFFAED581))
                 1 -> listOf(Color(0xFF7CB342), Color(0xFF558B2F), Color(0xFF8BC34A))
                 2 -> listOf(Color(0xFF43A047), Color(0xFF2E7D32), Color(0xFF66BB6A))
                 else -> listOf(Color(0xFF1B5E20), Color(0xFF0D3B10), Color(0xFF2E7D32))
             }
-
+            // Grass blade height, width, and wind sway all scaled by `u`!
             grassBlades.filter { it.layer == idx }.forEachIndexed { bIdx, blade ->
                 val bx = blade.xFraction * w
-                val by = blade.baseYFraction * h
-                val bHeight = blade.heightFraction * h
-
-                // Traveling wind wave across the field + rapid bustling micro-flutter
+                val by = layerTopY + blade.rowDepthOffset * (h * 0.11f)
+                val bHeight = blade.heightScale * u
+                val bWidth = blade.widthScale * u
                 val waveSweep = sin(t * 2.3f - blade.xFraction * 6.5f + blade.phaseSeed * 0.3f)
                 val gustFlutter = sin(t * 5.2f + blade.phaseSeed) * 0.3f
-                val totalSwayPx = blade.naturalLean + (waveSweep * 32f + gustFlutter * 14f) * (0.65f + idx * 0.2f)
-
+                val totalSwayPx = blade.naturalLean * u +
+                        (waveSweep * (u * 0.055f) + gustFlutter * (u * 0.024f)) * (0.65f + idx * 0.2f)
                 val tipX = bx + totalSwayPx
                 val tipY = by - bHeight
                 val ctrlX = bx + totalSwayPx * 0.38f
                 val ctrlY = by - bHeight * 0.55f
-
                 val bladePath = Path().apply {
-                    moveTo(bx - blade.widthPx * 0.5f, by)
-                    quadraticBezierTo(ctrlX - blade.widthPx * 0.18f, ctrlY, tipX, tipY)
-                    quadraticBezierTo(ctrlX + blade.widthPx * 0.18f, ctrlY, bx + blade.widthPx * 0.5f, by)
+                    moveTo(bx - bWidth * 0.5f, by)
+                    quadraticBezierTo(ctrlX - bWidth * 0.18f, ctrlY, tipX, tipY)
+                    quadraticBezierTo(ctrlX + bWidth * 0.18f, ctrlY, bx + bWidth * 0.5f, by)
                     close()
                 }
-                val color = bladePalette[bIdx % bladePalette.size]
-                drawPath(bladePath, color = color)
+                drawPath(bladePath, color = bladePalette[bIdx % bladePalette.size])
             }
         }
-
         // Drifting golden dandelion / forest pollen motes in the breeze
         for (m in 0 until 24) {
-            val mx = ((w * ((m * 47) % 100 / 100f) + t * (22f + m % 9 * 4f)) % (w * 1.1f)) - w * 0.05f
-            val my = h * (0.25f + ((m * 61) % 65) / 100f) + sin(t * 1.8f + m) * 16f
+            val mx = ((w * ((m * 47) % 100 / 100f) + t * (u * 0.035f + (m % 9) * (u * 0.005f))) % (w * 1.1f)) - w * 0.05f
+            val my = h * (0.22f + ((m * 61) % 68) / 100f) + sin(t * 1.8f + m) * (u * 0.025f)
             val alpha = 0.45f + 0.45f * sin(t * 2.4f + m)
             drawCircle(
                 color = Color(0xFFFFF9C4).copy(alpha = alpha),
-                radius = 3.2f + (m % 3) * 1.2f,
+                radius = u * (0.005f + (m % 3) * 0.002f),
                 center = Offset(mx, my)
             )
         }
     }
 }
-
 // ============================================================================
-// SCENE 5: FIRE & NIGHT CAMP WITH HALF MOON, GLITTERING STARS & METEORS
-// - Inspired by image_aea65e.png
-// - Deep purple night sky with crescent half-moon, glittering stars & 4-point
-//   sparkles, slow night clouds, and periodic shooting meteors
-// - Mountain silhouettes, pine trees, glowing tent, backpack, sleeping bags,
-//   and a warm stone-ring campfire with flickering flames and rising embers
+// SCENE 6: FIRE & NIGHT CAMP WITH HALF MOON, GLITTERING STARS & METEORS
+// - Portrait-optimized using `u = min(w, h)` so the tent, campfire, stone ring,
+//   backpack, sleeping bags, pine trees, and clouds match image_aea65e.png
+//   with zero vertical stretching!
 // ============================================================================
-
 @Composable
 fun NightCampfireMeteorsFullscreenScene(
     modifier: Modifier = Modifier
 ) {
     val t = rememberContinuousTimeSeconds()
-
     Canvas(modifier = modifier.fillMaxSize()) {
         val w = size.width
         val h = size.height
-
+        val u = min(w, h)
         // Deep violet-indigo night sky gradient matching image_aea65e.png
         drawRect(
             brush = Brush.verticalGradient(
@@ -2012,7 +1888,6 @@ fun NightCampfireMeteorsFullscreenScene(
                 )
             )
         )
-
         // Glittering stars (both circular stars and 4-point diamond sparkles)
         for (s in 0 until 32) {
             val sx = ((s * 67 + 11) % 94 + 3) / 100f * w
@@ -2021,21 +1896,20 @@ fun NightCampfireMeteorsFullscreenScene(
             if (s % 5 == 0) {
                 drawFourPointSparkle(
                     center = Offset(sx, sy),
-                    radius = (6f + (s % 3) * 2.5f) * (0.7f + 0.3f * twinkle),
+                    radius = u * (0.010f + (s % 3) * 0.004f) * (0.7f + 0.3f * twinkle),
                     color = Color.White.copy(alpha = twinkle)
                 )
             } else {
                 drawCircle(
                     color = Color.White.copy(alpha = twinkle),
-                    radius = 2.2f + (s % 3) * 0.9f,
+                    radius = u * (0.0038f + (s % 3) * 0.0015f),
                     center = Offset(sx, sy)
                 )
             }
         }
-
         // Crescent Half-Moon with soft atmospheric halo
-        val moonCenter = Offset(w * 0.44f, h * 0.155f)
-        val moonRadius = min(w, h) * 0.085f
+        val moonCenter = Offset(w * 0.45f, h * 0.16f)
+        val moonRadius = u * 0.105f
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(
@@ -2055,21 +1929,19 @@ fun NightCampfireMeteorsFullscreenScene(
             color = Color(0xFFFFFFFF),
             shadowColor = Color(0xFF28165B)
         )
-
-        // Periodic Shooting Meteors streaking across the night sky
+        // Periodic Shooting Meteors streaking across the night sky (proportioned in `u`)
         for (m in 0..1) {
             val meteorPeriod = 5.5f
             val localClock = (t + m * 2.75f) % meteorPeriod
             if (localClock < 1.15f) {
                 val p = localClock / 1.15f
-                val startX = w * (0.82f - m * 0.25f)
-                val startY = h * (0.07f + m * 0.08f)
-                val headX = startX - p * (w * 0.45f)
-                val headY = startY + p * (h * 0.24f)
-                val tailLenX = w * 0.14f * (1f - p * 0.4f)
-                val tailLenY = h * 0.075f * (1f - p * 0.4f)
+                val startX = w * (0.84f - m * 0.25f)
+                val startY = h * (0.09f + m * 0.08f)
+                val headX = startX - p * (u * 0.52f)
+                val headY = startY + p * (u * 0.32f)
+                val tailLenX = u * 0.16f * (1f - p * 0.4f)
+                val tailLenY = u * 0.10f * (1f - p * 0.4f)
                 val alpha = sin(p * PI.toFloat())
-
                 drawLine(
                     brush = Brush.linearGradient(
                         colors = listOf(
@@ -2082,75 +1954,68 @@ fun NightCampfireMeteorsFullscreenScene(
                     ),
                     start = Offset(headX, headY),
                     end = Offset(headX + tailLenX, headY - tailLenY),
-                    strokeWidth = 3.5f,
+                    strokeWidth = u * 0.0055f,
                     cap = StrokeCap.Round
                 )
                 drawFourPointSparkle(
                     center = Offset(headX, headY),
-                    radius = 7f * alpha,
+                    radius = u * 0.012f * alpha,
                     color = Color.White.copy(alpha = alpha)
                 )
             }
         }
-
-        // Slow drifting flat-bottomed night clouds matching image_aea65e.png
-        val cloud1X = ((w * 0.08f + t * 8f) % (w * 1.3f)) - w * 0.15f
-        val cloud2X = ((w * 0.34f + t * 11f) % (w * 1.3f)) - w * 0.15f
-        val cloud3X = ((w * 0.85f + t * 6.5f) % (w * 1.3f)) - w * 0.15f
-        drawFlatNightCloud(Offset(cloud1X, h * 0.19f), w * 0.28f, h * 0.038f, Color(0xFF6B5B9E).copy(alpha = 0.72f))
-        drawFlatNightCloud(Offset(cloud2X, h * 0.31f), w * 0.24f, h * 0.032f, Color(0xFF6B5B9E).copy(alpha = 0.68f))
-        drawFlatNightCloud(Offset(cloud3X, h * 0.26f), w * 0.18f, h * 0.025f, Color(0xFF6B5B9E).copy(alpha = 0.62f))
-
-        // Layered Purple Mountain Peaks in the background
+        // Slow drifting flat-bottomed night clouds (width & height both scaled by `u`)
+        val cloud1X = ((w * 0.08f + t * (u * 0.014f)) % (w + u * 0.4f)) - u * 0.2f
+        val cloud2X = ((w * 0.34f + t * (u * 0.019f)) % (w + u * 0.4f)) - u * 0.2f
+        val cloud3X = ((w * 0.85f + t * (u * 0.011f)) % (w + u * 0.4f)) - u * 0.2f
+        drawFlatNightCloud(Offset(cloud1X, h * 0.20f), u * 0.32f, u * 0.065f, Color(0xFF6B5B9E).copy(alpha = 0.72f))
+        drawFlatNightCloud(Offset(cloud2X, h * 0.31f), u * 0.28f, u * 0.056f, Color(0xFF6B5B9E).copy(alpha = 0.68f))
+        drawFlatNightCloud(Offset(cloud3X, h * 0.26f), u * 0.22f, u * 0.044f, Color(0xFF6B5B9E).copy(alpha = 0.62f))
+        val groundTopY = h * 0.70f
+        // Layered Purple Mountain Peaks anchored at groundTopY using `u` heights
         val leftMountain = Path().apply {
-            moveTo(0f, h * 0.41f)
-            lineTo(w * 0.48f, h * 0.62f)
-            lineTo(0f, h * 0.72f)
+            moveTo(0f, groundTopY - u * 0.56f)
+            lineTo(w * 0.52f, groundTopY - u * 0.14f)
+            lineTo(0f, groundTopY)
             close()
         }
         drawPath(leftMountain, color = Color(0xFF42285C))
-
         val rightMountain = Path().apply {
-            moveTo(w * 0.35f, h * 0.72f)
-            lineTo(w * 0.68f, h * 0.43f)
-            lineTo(w * 0.76f, h * 0.47f)
-            lineTo(w * 0.96f, h * 0.33f)
-            lineTo(w, h * 0.36f)
-            lineTo(w, h * 0.72f)
+            moveTo(w * 0.34f, groundTopY)
+            lineTo(w * 0.68f, groundTopY - u * 0.52f)
+            lineTo(w * 0.76f, groundTopY - u * 0.44f)
+            lineTo(w * 0.96f, groundTopY - u * 0.70f)
+            lineTo(w, groundTopY - u * 0.64f)
+            lineTo(w, groundTopY)
             close()
         }
         drawPath(rightMountain, color = Color(0xFF35204F))
-
-        // Mountain ridge highlight facets
         val ridgeHighlight = Path().apply {
-            moveTo(w * 0.68f, h * 0.43f)
-            lineTo(w * 0.72f, h * 0.45f)
-            lineTo(w * 0.56f, h * 0.65f)
-            lineTo(w * 0.46f, h * 0.65f)
+            moveTo(w * 0.68f, groundTopY - u * 0.52f)
+            lineTo(w * 0.72f, groundTopY - u * 0.48f)
+            lineTo(w * 0.56f, groundTopY - u * 0.10f)
+            lineTo(w * 0.46f, groundTopY - u * 0.10f)
             close()
         }
         drawPath(ridgeHighlight, color = Color(0xFF4D326E))
-
-        // Pine tree silhouettes along the mountain slope
+        // Pine tree silhouettes along the mountain ridge (both width and height in `u`!)
         val pinePositions = listOf(
-            Triple(0.05f, 0.51f, 0.065f),
-            Triple(0.13f, 0.53f, 0.060f),
-            Triple(0.18f, 0.54f, 0.055f),
-            Triple(0.28f, 0.55f, 0.052f),
-            Triple(0.50f, 0.59f, 0.055f),
-            Triple(0.54f, 0.60f, 0.048f)
+            Triple(0.05f, 0.36f, 0.12f),
+            Triple(0.13f, 0.32f, 0.11f),
+            Triple(0.19f, 0.29f, 0.10f),
+            Triple(0.28f, 0.25f, 0.095f),
+            Triple(0.50f, 0.18f, 0.105f),
+            Triple(0.55f, 0.16f, 0.090f)
         )
-        pinePositions.forEach { (px, py, ph) ->
+        pinePositions.forEach { (px, elevU, heightU) ->
             drawPineTreeSilhouette(
-                base = Offset(w * px, h * py),
-                treeHeight = h * ph,
-                treeWidth = w * 0.036f,
+                base = Offset(w * px, groundTopY - u * elevU),
+                treeHeight = u * heightU,
+                treeWidth = u * (heightU * 0.52f),
                 color = Color(0xFF15242C)
             )
         }
-
         // Mossy green campsite ground
-        val groundTopY = h * 0.71f
         drawRect(
             brush = Brush.verticalGradient(
                 colors = listOf(
@@ -2164,44 +2029,38 @@ fun NightCampfireMeteorsFullscreenScene(
             topLeft = Offset(0f, groundTopY),
             size = Size(w, h - groundTopY)
         )
-
-        // Warm pulsing firelight glow on the ground around the campfire
-        val fireCenter = Offset(w * 0.62f, h * 0.825f)
+        // Campfire position & warm pulsing firelight glow on the ground (sized in `u`)
+        val fireCenter = Offset(w * 0.62f, groundTopY + u * 0.23f)
         val firePulse = 1f + 0.07f * sin(t * 7.5f) + 0.04f * cos(t * 13f)
         drawOval(
             color = Color(0x44FFB74D),
             topLeft = Offset(
-                fireCenter.x - w * 0.25f * firePulse,
-                fireCenter.y - h * 0.075f * firePulse
+                fireCenter.x - u * 0.26f * firePulse,
+                fireCenter.y - u * 0.10f * firePulse
             ),
-            size = Size(w * 0.50f * firePulse, h * 0.16f * firePulse)
+            size = Size(u * 0.52f * firePulse, u * 0.22f * firePulse)
         )
         drawOval(
             color = Color(0x55FFA726),
             topLeft = Offset(
-                fireCenter.x - w * 0.16f * firePulse,
-                fireCenter.y - h * 0.045f * firePulse
+                fireCenter.x - u * 0.17f * firePulse,
+                fireCenter.y - u * 0.065f * firePulse
             ),
-            size = Size(w * 0.32f * firePulse, h * 0.105f * firePulse)
+            size = Size(u * 0.34f * firePulse, u * 0.14f * firePulse)
         )
-
-        // Glowing Yellow-Orange Camping Tent on the left
-        val tentApex = Offset(w * 0.295f, h * 0.555f)
-        val tentLeft = Offset(w * -0.02f, h * 0.74f)
-        val tentFrontCenter = Offset(w * 0.225f, h * 0.79f)
-        val tentRight = Offset(w * 0.46f, h * 0.735f)
-
-        // Tent side slope (warm golden yellow)
+        // Glowing Yellow-Orange Camping Tent on the left (all dimensions in `u`!)
+        val tentApex = Offset(w * 0.295f, groundTopY - u * 0.29f)
+        val tentLeft = Offset(w * -0.02f, groundTopY + u * 0.05f)
+        val tentFrontCenter = Offset(w * 0.225f, groundTopY + u * 0.15f)
+        val tentRight = Offset(w * 0.46f, groundTopY + u * 0.04f)
         val tentSide = Path().apply {
             moveTo(tentLeft.x, tentLeft.y)
             lineTo(tentApex.x, tentApex.y)
             lineTo(tentFrontCenter.x, tentFrontCenter.y)
-            lineTo(w * -0.02f, h * 0.775f)
+            lineTo(w * -0.02f, groundTopY + u * 0.12f)
             close()
         }
         drawPath(tentSide, color = Color(0xFFE6A12E))
-
-        // Tent front gable
         val tentFront = Path().apply {
             moveTo(tentFrontCenter.x, tentFrontCenter.y)
             lineTo(tentApex.x, tentApex.y)
@@ -2209,109 +2068,104 @@ fun NightCampfireMeteorsFullscreenScene(
             close()
         }
         drawPath(tentFront, color = Color(0xFFF5B841))
-
-        // Tent dark interior doorway flap
         val tentDoor = Path().apply {
-            moveTo(w * 0.265f, h * 0.78f)
-            lineTo(tentApex.x, h * 0.585f)
-            lineTo(w * 0.39f, h * 0.752f)
+            moveTo(w * 0.265f, groundTopY + u * 0.13f)
+            lineTo(tentApex.x, groundTopY - u * 0.23f)
+            lineTo(w * 0.39f, groundTopY + u * 0.075f)
             close()
         }
         drawPath(tentDoor, color = Color(0xFF1A1E36))
-
-        // Tent guy-line rope & peg
+        // Tent guy-line rope
         drawLine(
             color = Color(0xFFD7CCC8).copy(alpha = 0.75f),
             start = tentApex,
-            end = Offset(w * 0.545f, h * 0.765f),
-            strokeWidth = 2f
+            end = Offset(w * 0.545f, groundTopY + u * 0.10f),
+            strokeWidth = max(1.5f, u * 0.003f)
         )
-
-        // Backpack resting beside the tent
+        // Backpack resting beside the tent (proportioned in `u`!)
+        val packX = w * 0.095f
+        val packY = groundTopY + u * 0.10f
         drawRoundRect(
             color = Color(0xFF332940),
-            topLeft = Offset(w * 0.095f, h * 0.765f),
-            size = Size(w * 0.105f, h * 0.082f),
-            cornerRadius = CornerRadius(18f, 18f)
+            topLeft = Offset(packX, packY),
+            size = Size(u * 0.115f, u * 0.145f),
+            cornerRadius = CornerRadius(u * 0.03f, u * 0.03f)
         )
         drawRoundRect(
             color = Color(0xFF4A3B5C),
-            topLeft = Offset(w * 0.102f, h * 0.762f),
-            size = Size(w * 0.09f, h * 0.035f),
-            cornerRadius = CornerRadius(14f, 14f)
+            topLeft = Offset(packX + u * 0.008f, packY - u * 0.005f),
+            size = Size(u * 0.098f, u * 0.062f),
+            cornerRadius = CornerRadius(u * 0.025f, u * 0.025f)
         )
-
-        // Rolled sleeping mats on the right of the fire
+        // Rolled sleeping mats on the right of the fire (proportioned in `u`!)
         drawRoundRect(
             color = Color(0xFF423A5A),
-            topLeft = Offset(w * 0.72f, h * 0.755f),
-            size = Size(w * 0.19f, h * 0.048f),
-            cornerRadius = CornerRadius(24f, 24f)
+            topLeft = Offset(w * 0.72f, groundTopY + u * 0.08f),
+            size = Size(u * 0.20f, u * 0.082f),
+            cornerRadius = CornerRadius(u * 0.04f, u * 0.04f)
         )
         drawRoundRect(
             color = Color(0xFF9C7A54),
-            topLeft = Offset(w * 0.83f, h * 0.818f),
-            size = Size(w * 0.17f, h * 0.052f),
-            cornerRadius = CornerRadius(26f, 26f)
+            topLeft = Offset(w * 0.82f, groundTopY + u * 0.20f),
+            size = Size(u * 0.18f, u * 0.088f),
+            cornerRadius = CornerRadius(u * 0.044f, u * 0.044f)
         )
-
-        // Campfire logs & circle of stones
+        // Campfire logs & circle of stones (proportioned in `u`!)
         drawLine(
             color = Color(0xFF6D3B24),
-            start = Offset(fireCenter.x - w * 0.065f, fireCenter.y + h * 0.015f),
-            end = Offset(fireCenter.x + w * 0.065f, fireCenter.y - h * 0.012f),
-            strokeWidth = 14f,
+            start = Offset(fireCenter.x - u * 0.075f, fireCenter.y + u * 0.024f),
+            end = Offset(fireCenter.x + u * 0.075f, fireCenter.y - u * 0.020f),
+            strokeWidth = u * 0.024f,
             cap = StrokeCap.Round
         )
         drawLine(
             color = Color(0xFF5D2F1B),
-            start = Offset(fireCenter.x - w * 0.055f, fireCenter.y - h * 0.012f),
-            end = Offset(fireCenter.x + w * 0.055f, fireCenter.y + h * 0.015f),
-            strokeWidth = 14f,
+            start = Offset(fireCenter.x - u * 0.065f, fireCenter.y - u * 0.020f),
+            end = Offset(fireCenter.x + u * 0.065f, fireCenter.y + u * 0.024f),
+            strokeWidth = u * 0.024f,
             cap = StrokeCap.Round
         )
-
-        // Animated 3-layer flickering campfire flames
+        // Animated 3-layer flickering campfire flames (width & height in `u`!)
         drawFlickeringCampfire(
-            baseCenter = Offset(fireCenter.x, fireCenter.y + h * 0.008f),
-            flameWidth = w * 0.15f,
-            flameHeight = h * 0.135f,
+            baseCenter = Offset(fireCenter.x, fireCenter.y + u * 0.015f),
+            flameWidth = u * 0.17f,
+            flameHeight = u * 0.24f,
             time = t
         )
-
-        // Ring of stones around the campfire base
+        // Ring of stones around the campfire base (width & height in `u`!)
         val stoneOffsets = listOf(
-            Offset(-0.11f, 0.005f),
-            Offset(-0.085f, 0.022f),
-            Offset(-0.04f, 0.032f),
-            Offset(0.015f, 0.034f),
-            Offset(0.068f, 0.026f),
-            Offset(0.105f, 0.010f)
+            Offset(-0.115f, 0.010f),
+            Offset(-0.088f, 0.038f),
+            Offset(-0.042f, 0.056f),
+            Offset(0.016f, 0.058f),
+            Offset(0.070f, 0.044f),
+            Offset(0.110f, 0.016f)
         )
         stoneOffsets.forEachIndexed { idx, (ox, oy) ->
             drawOval(
                 color = if (idx % 2 == 0) Color(0xFF7B6B63) else Color(0xFF62544E),
-                topLeft = Offset(fireCenter.x + w * ox - w * 0.028f, fireCenter.y + h * oy - h * 0.014f),
-                size = Size(w * 0.056f, h * 0.028f)
+                topLeft = Offset(
+                    fireCenter.x + u * ox - u * 0.032f,
+                    fireCenter.y + u * oy - u * 0.022f
+                ),
+                size = Size(u * 0.064f, u * 0.044f)
             )
         }
-
-        // Rising glowing fire sparks / embers + soft smoke plume
+        // Rising glowing fire sparks / embers (proportioned in `u`!)
         for (e in 0 until 14) {
             val eProg = ((t * 0.55f + e * 0.075f) % 1f)
-            val ex = fireCenter.x + sin(t * 3.2f + e * 1.7f) * (w * 0.045f * eProg)
-            val ey = fireCenter.y - h * 0.05f - eProg * (h * 0.19f)
+            val ex = fireCenter.x + sin(t * 3.2f + e * 1.7f) * (u * 0.055f * eProg)
+            val ey = fireCenter.y - u * 0.09f - eProg * (u * 0.34f)
             val eAlpha = (1f - eProg) * 0.9f
             drawCircle(
                 color = if (e % 2 == 0) Color(0xFFFFD54F).copy(alpha = eAlpha)
                 else Color(0xFFFF7043).copy(alpha = eAlpha),
-                radius = (1f - eProg * 0.5f) * 3.8f,
+                radius = (1f - eProg * 0.5f) * (u * 0.0065f),
                 center = Offset(ex, ey)
             )
         }
     }
 }
-
 private fun DrawScope.drawFlickeringCampfire(
     baseCenter: Offset,
     flameWidth: Float,
@@ -2321,7 +2175,6 @@ private fun DrawScope.drawFlickeringCampfire(
     val sway1 = sin(time * 6.5f) * (flameWidth * 0.14f)
     val sway2 = cos(time * 8.2f + 1.1f) * (flameWidth * 0.12f)
     val stretch = 1f + 0.09f * sin(time * 9.5f)
-
     // Outer orange-red flame
     val outerFlame = Path().apply {
         moveTo(baseCenter.x - flameWidth * 0.5f, baseCenter.y)
@@ -2338,7 +2191,6 @@ private fun DrawScope.drawFlickeringCampfire(
         close()
     }
     drawPath(outerFlame, color = Color(0xFFFF6D00))
-
     // Middle golden-amber flame
     val midFlame = Path().apply {
         moveTo(baseCenter.x - flameWidth * 0.36f, baseCenter.y)
@@ -2355,7 +2207,6 @@ private fun DrawScope.drawFlickeringCampfire(
         close()
     }
     drawPath(midFlame, color = Color(0xFFFFAB00))
-
     // Inner bright yellow-white core flame
     val coreFlame = Path().apply {
         moveTo(baseCenter.x - flameWidth * 0.20f, baseCenter.y)
@@ -2371,29 +2222,21 @@ private fun DrawScope.drawFlickeringCampfire(
     }
     drawPath(coreFlame, color = Color(0xFFFFF59D))
 }
-
 // ============================================================================
-// SCENE 6: OCEAN WAVES & SAILBOAT WITH CALM, CLOUDY, WINDY & SUNNY WEATHERS
-// - Inspired by uploaded images (image_aeaa80.jpg, image_aeaa97.png, image_aeaa99.png)
-// - Multi-layered rolling cyan/blue ocean waves with white foam ribbons &
-//   translucent water bubbles
-// - Sailboat that dynamically rides the exact wave surface height & slope angle
-// - Distant coastal lighthouse on a rocky headland + gliding seagulls
-// - Smoothly transitions across Sunny/Calm, Cloudy/Peaceful, and Windy Swell
+// SCENE 7: OCEAN WAVES & SAILBOAT (PORTRAIT-OPTIMIZED)
+// - Lighthouse, headland, sailboat, and wave amplitudes/wavelengths are all
+//   proportioned in `u = min(w, h)` so nothing stretches vertically!
 // ============================================================================
-
 @Composable
 fun OceanWaveBoatFullscreenScene(
     weatherMode: WaveWeatherState = WaveWeatherState.AUTO_CYCLE,
     modifier: Modifier = Modifier
 ) {
     val t = rememberContinuousTimeSeconds()
-
     Canvas(modifier = modifier.fillMaxSize()) {
         val w = size.width
         val h = size.height
-
-        // Determine active weather state (0 = Sunny Calm, 1 = Cloudy Peaceful, 2 = Windy Swell)
+        val u = min(w, h)
         val weatherCycle = when (weatherMode) {
             WaveWeatherState.SUNNY_CALM -> 0f
             WaveWeatherState.CLOUDY_PEACEFUL -> 1f
@@ -2403,11 +2246,10 @@ fun OceanWaveBoatFullscreenScene(
         val wIdx = floor(weatherCycle).toInt() % 3
         val wFrac = weatherCycle - floor(weatherCycle)
         val nextWIdx = (wIdx + 1) % 3
-
         val skyTops = listOf(
-            Color(0xFF64B5F6), // Sunny Calm
-            Color(0xFF78909C), // Cloudy Peaceful
-            Color(0xFF455A64)  // Windy Swell
+            Color(0xFF64B5F6),
+            Color(0xFF78909C),
+            Color(0xFF455A64)
         )
         val skyBottoms = listOf(
             Color(0xFFE1F5FE),
@@ -2416,138 +2258,127 @@ fun OceanWaveBoatFullscreenScene(
         )
         val waveSpeedMultipliers = listOf(1.0f, 0.85f, 1.65f)
         val waveAmpMultipliers = listOf(0.85f, 0.75f, 1.35f)
-
         val skyTop = lerpColor(skyTops[wIdx], skyTops[nextWIdx], wFrac)
         val skyBottom = lerpColor(skyBottoms[wIdx], skyBottoms[nextWIdx], wFrac)
         val speedMul = waveSpeedMultipliers[wIdx] * (1f - wFrac) + waveSpeedMultipliers[nextWIdx] * wFrac
         val ampMul = waveAmpMultipliers[wIdx] * (1f - wFrac) + waveAmpMultipliers[nextWIdx] * wFrac
-
-        // Sky background
         drawRect(
             brush = Brush.verticalGradient(colors = listOf(skyTop, skyBottom))
         )
-
         // Warm sun in Sunny/Calm weather
         val sunVis = if (wIdx == 0) 1f - wFrac * 0.6f else if (nextWIdx == 0) wFrac else 0.25f
         if (sunVis > 0.05f) {
-            val sunPos = Offset(w * 0.20f, h * 0.16f)
+            val sunPos = Offset(w * 0.22f, h * 0.18f)
             drawCircle(
                 color = Color(0xFFFFF59D).copy(alpha = 0.35f * sunVis),
-                radius = min(w, h) * 0.12f,
+                radius = u * 0.13f,
                 center = sunPos
             )
             drawCircle(
                 color = Color(0xFFFFEB3B).copy(alpha = 0.9f * sunVis),
-                radius = min(w, h) * 0.068f,
+                radius = u * 0.072f,
                 center = sunPos
             )
         }
-
-        // Layered clouds (soft white in Sunny, fuller grey-white in Cloudy/Windy)
+        // Layered clouds (proportioned in `u`)
         val cloudShade = lerpColor(
             Color.White,
             Color(0xFFB0BEC5),
             if (wIdx == 0) 0.15f else 0.55f
         )
         for (c in 0 until 4) {
-            val cx = ((w * (0.15f + c * 0.28f) + t * (12f + c * 4f) * speedMul) % (w * 1.4f)) - w * 0.2f
-            val cy = h * (0.11f + (c % 2) * 0.07f)
+            val cx = ((w * (0.15f + c * 0.28f) + t * (u * 0.022f + c * u * 0.007f) * speedMul) % (w + u * 0.5f)) - u * 0.25f
+            val cy = h * (0.15f + (c % 2) * 0.065f)
             drawDriftingCloudCluster(
                 cx = cx,
                 cy = cy,
-                scale = w * (0.00125f + (c % 2) * 0.0003f),
+                scale = u * (0.0014f + (c % 2) * 0.0003f),
                 color = cloudShade.copy(alpha = 0.9f)
             )
         }
-
-        // Gliding Seagulls in the distance (inspired by image_aeaa80.jpg)
+        // Gliding Seagulls in the distance (proportioned in `u`)
         for (bird in 0 until 7) {
-            val bx = ((w * (0.30f + bird * 0.08f) + t * (14f + bird * 2f)) % (w * 0.9f)) + w * 0.05f
-            val by = h * (0.24f + (bird % 4) * 0.055f) + sin(t * 2.2f + bird) * 6f
-            val wingFlap = sin(t * 5.5f + bird * 1.3f) * 6f
-            val birdScale = 0.7f + (bird % 3) * 0.22f
+            val bx = ((w * (0.25f + bird * 0.09f) + t * (u * 0.025f + bird * u * 0.004f)) % (w * 0.92f)) + w * 0.04f
+            val by = h * (0.28f + (bird % 4) * 0.048f) + sin(t * 2.2f + bird) * (u * 0.01f)
+            val wingFlap = sin(t * 5.5f + bird * 1.3f) * (u * 0.010f)
+            val birdScale = (u * 0.0016f) * (0.7f + (bird % 3) * 0.22f)
             val gullPath = Path().apply {
-                moveTo(bx - 12f * birdScale, by + wingFlap * birdScale)
+                moveTo(bx - 12f * birdScale, by + wingFlap)
                 quadraticBezierTo(bx - 5f * birdScale, by - 6f * birdScale, bx, by)
-                quadraticBezierTo(bx + 5f * birdScale, by - 6f * birdScale, bx + 12f * birdScale, by + wingFlap * birdScale)
+                quadraticBezierTo(bx + 5f * birdScale, by - 6f * birdScale, bx + 12f * birdScale, by + wingFlap)
             }
             drawPath(
                 path = gullPath,
                 color = Color.White.copy(alpha = 0.85f),
-                style = Stroke(width = 2.2f * birdScale, cap = StrokeCap.Round)
+                style = Stroke(width = max(1.6f, 2.2f * birdScale), cap = StrokeCap.Round)
             )
         }
-
-        // Distant Rocky Headland & Lighthouse on the right (from image_aeaa80.jpg)
-        val cliffBaseY = h * 0.60f
-        val lighthouseX = w * 0.88f
-        val towerBottomY = h * 0.53f
-        val towerTopY = h * 0.30f
-
+        // Distant Rocky Headland & Lighthouse on the right (all dimensions in `u`!)
+        val horizonWaterY = h * 0.60f
+        val lighthouseX = w * 0.86f
+        val cliffTopY = horizonWaterY - u * 0.11f
+        val towerBottomY = cliffTopY + u * 0.02f
+        val towerTopY = towerBottomY - u * 0.30f
         // Lighthouse tower
         val towerPath = Path().apply {
-            moveTo(lighthouseX - w * 0.028f, towerBottomY)
-            lineTo(lighthouseX - w * 0.018f, towerTopY)
-            lineTo(lighthouseX + w * 0.018f, towerTopY)
-            lineTo(lighthouseX + w * 0.028f, towerBottomY)
+            moveTo(lighthouseX - u * 0.036f, towerBottomY)
+            lineTo(lighthouseX - u * 0.022f, towerTopY)
+            lineTo(lighthouseX + u * 0.022f, towerTopY)
+            lineTo(lighthouseX + u * 0.036f, towerBottomY)
             close()
         }
         drawPath(towerPath, color = Color(0xFFECEFF1))
         // Lantern room & warm glowing beacon
+        val lanternH = u * 0.042f
         drawRect(
             color = Color(0xFF455A64),
-            topLeft = Offset(lighthouseX - w * 0.020f, towerTopY - h * 0.032f),
-            size = Size(w * 0.040f, h * 0.032f)
+            topLeft = Offset(lighthouseX - u * 0.026f, towerTopY - lanternH),
+            size = Size(u * 0.052f, lanternH)
         )
         val beaconGlow = 0.65f + 0.35f * sin(t * 3.2f)
         drawCircle(
             color = Color(0xFFFFB300).copy(alpha = beaconGlow),
-            radius = min(w, h) * 0.014f,
-            center = Offset(lighthouseX, towerTopY - h * 0.016f)
+            radius = u * 0.015f,
+            center = Offset(lighthouseX, towerTopY - lanternH * 0.5f)
         )
         // Lighthouse roof cap
         val capPath = Path().apply {
-            moveTo(lighthouseX - w * 0.024f, towerTopY - h * 0.032f)
-            lineTo(lighthouseX, towerTopY - h * 0.052f)
-            lineTo(lighthouseX + w * 0.024f, towerTopY - h * 0.032f)
+            moveTo(lighthouseX - u * 0.032f, towerTopY - lanternH)
+            lineTo(lighthouseX, towerTopY - lanternH - u * 0.030f)
+            lineTo(lighthouseX + u * 0.032f, towerTopY - lanternH)
             close()
         }
         drawPath(capPath, color = Color(0xFF263238))
-
-        // Keeper's cottage & rocky cliff base
+        // Keeper's cottage & rocky cliff base (in `u`)
         drawRect(
             color = Color(0xFFCFD8DC),
-            topLeft = Offset(lighthouseX + w * 0.01f, towerBottomY - h * 0.055f),
-            size = Size(w * 0.085f, h * 0.055f)
+            topLeft = Offset(lighthouseX + u * 0.012f, towerBottomY - u * 0.075f),
+            size = Size(u * 0.11f, u * 0.075f)
         )
         val cliffPath = Path().apply {
-            moveTo(w * 0.72f, cliffBaseY)
-            quadraticBezierTo(w * 0.76f, h * 0.51f, w * 0.85f, h * 0.51f)
-            lineTo(w, h * 0.50f)
-            lineTo(w, cliffBaseY)
+            moveTo(w * 0.68f, horizonWaterY + u * 0.02f)
+            quadraticBezierTo(w * 0.73f, cliffTopY, w * 0.83f, cliffTopY)
+            lineTo(w, cliffTopY - u * 0.01f)
+            lineTo(w, horizonWaterY + u * 0.02f)
             close()
         }
         drawPath(cliffPath, color = Color(0xFF455A64))
-
-        // 4 Layered Rolling Ocean Waves (combining image_aeaa97.png & image_aeaa99.png)
-        // Wave Layer 1 (Back pale sky-blue swell)
+        // 4 Layered Rolling Ocean Waves (amplitudes & wavelengths scaled by `u`!)
         drawSineWaveLayer(
-            baseY = h * 0.57f,
-            amplitude = h * 0.022f * ampMul,
-            wavelength = w * 0.52f,
+            baseY = horizonWaterY,
+            amplitude = u * 0.026f * ampMul,
+            wavelength = u * 0.68f,
             phase = t * 1.2f * speedMul,
             color = Color(0xFF81D4FA),
-            foamColor = null
+            foamColor = null,
+            foamWidth = u * 0.006f
         )
-
         // Wave Layer 2 (Mid-back turquoise swell — the Sailboat rides on this wave!)
-        val boatWaveBaseY = h * 0.63f
-        val boatWaveAmp = h * 0.030f * ampMul
-        val boatWaveLen = w * 0.48f
+        val boatWaveBaseY = horizonWaterY + u * 0.085f
+        val boatWaveAmp = u * 0.036f * ampMul
+        val boatWaveLen = u * 0.62f
         val boatWavePhase = -t * 1.65f * speedMul
-
-        // Compute exact wave height and tangent slope angle at the boat's X coordinate
-        val boatX = w * 0.26f + sin(t * 0.55f) * (w * 0.04f)
+        val boatX = w * 0.28f + sin(t * 0.55f) * (u * 0.045f)
         val k = (2.0 * PI / boatWaveLen).toFloat()
         val angleArg = k * boatX + boatWavePhase
         val boatWaveY = boatWaveBaseY + sin(angleArg) * boatWaveAmp +
@@ -2555,58 +2386,54 @@ fun OceanWaveBoatFullscreenScene(
         val dYdx = cos(angleArg) * boatWaveAmp * k +
                 cos(angleArg * 1.8f + 1.2f) * (boatWaveAmp * 0.25f * 1.8f * k)
         val boatTiltDeg = (atan2(dYdx, 1f) * (180.0 / PI)).toFloat().coerceIn(-18f, 18f)
-
-        // Draw the Sailboat pitching and bobbing realistically with the waves
+        // Draw the Sailboat pitching and bobbing realistically with the waves (1:1 `u` scale)
         drawWaveRidingSailboat(
-            pivot = Offset(boatX, boatWaveY + h * 0.008f),
+            pivot = Offset(boatX, boatWaveY + u * 0.012f),
             tiltDegrees = boatTiltDeg,
-            scale = min(w, h) * 0.0016f,
+            scale = u * 0.00165f,
             windIntensity = ampMul,
             time = t
         )
-
-        // Draw Wave Layer 2 over the bottom of the boat hull so the boat sits naturally in the water
         drawSineWaveLayer(
             baseY = boatWaveBaseY,
             amplitude = boatWaveAmp,
             wavelength = boatWaveLen,
             phase = boatWavePhase,
             color = Color(0xFF29B6F6),
-            foamColor = Color.White.copy(alpha = 0.55f)
+            foamColor = Color.White.copy(alpha = 0.55f),
+            foamWidth = u * 0.0065f
         )
-
         // Wave Layer 3 (Mid-front rich cyan-blue wave)
+        val midFrontWaveY = boatWaveBaseY + u * 0.115f
         drawSineWaveLayer(
-            baseY = h * 0.73f,
-            amplitude = h * 0.036f * ampMul,
-            wavelength = w * 0.56f,
+            baseY = midFrontWaveY,
+            amplitude = u * 0.042f * ampMul,
+            wavelength = u * 0.72f,
             phase = t * 1.95f * speedMul + 1.4f,
             color = Color(0xFF0288D1),
-            foamColor = Color.White.copy(alpha = 0.72f)
+            foamColor = Color.White.copy(alpha = 0.72f),
+            foamWidth = u * 0.007f
         )
-
-        // Wave Layer 4 (Foreground deep ocean blue wave with sparkling foam bubbles from image_aeaa99.png)
-        val frontWaveBaseY = h * 0.83f
-        val frontWaveAmp = h * 0.038f * ampMul
-        val frontWaveLen = w * 0.62f
+        // Wave Layer 4 (Foreground deep ocean blue wave with sparkling foam bubbles)
+        val frontWaveBaseY = midFrontWaveY + u * 0.125f
+        val frontWaveAmp = u * 0.046f * ampMul
+        val frontWaveLen = u * 0.78f
         val frontWavePhase = -t * 2.25f * speedMul + 2.5f
-
         drawSineWaveLayer(
             baseY = frontWaveBaseY,
             amplitude = frontWaveAmp,
             wavelength = frontWaveLen,
             phase = frontWavePhase,
             color = Color(0xFF01579B),
-            foamColor = Color.White.copy(alpha = 0.85f)
+            foamColor = Color.White.copy(alpha = 0.85f),
+            foamWidth = u * 0.0075f
         )
-
-        // Sparkling sea-foam bubbles & white water swirls inside the foreground waves (image_aeaa99.png)
+        // Sparkling sea-foam bubbles inside the foreground waves (proportioned in `u`)
         for (b in 0 until 26) {
-            val bx = ((w * ((b * 43) % 100 / 100f) + t * (28f + (b % 5) * 8f) * speedMul) % (w * 1.1f)) - w * 0.05f
+            val bx = ((w * ((b * 43) % 100 / 100f) + t * (u * 0.045f + (b % 5) * u * 0.012f) * speedMul) % (w * 1.1f)) - w * 0.05f
             val localWaveY = frontWaveBaseY + sin((2f * PI.toFloat() / frontWaveLen) * bx + frontWavePhase) * frontWaveAmp
-            val by = localWaveY + h * 0.025f + (b % 6) * (h * 0.022f) + sin(t * 3f + b) * 5f
-            val br = (4f + (b % 4) * 3.8f)
-
+            val by = localWaveY + u * 0.032f + (b % 6) * (u * 0.028f) + sin(t * 3f + b) * (u * 0.008f)
+            val br = u * (0.0065f + (b % 4) * 0.0055f)
             drawCircle(
                 color = Color.White.copy(alpha = 0.28f),
                 radius = br,
@@ -2616,7 +2443,7 @@ fun OceanWaveBoatFullscreenScene(
                 color = Color.White.copy(alpha = 0.78f),
                 radius = br,
                 center = Offset(bx, by),
-                style = Stroke(width = 1.6f)
+                style = Stroke(width = max(1.3f, u * 0.0024f))
             )
             drawCircle(
                 color = Color.White.copy(alpha = 0.9f),
@@ -2626,21 +2453,20 @@ fun OceanWaveBoatFullscreenScene(
         }
     }
 }
-
 private fun DrawScope.drawSineWaveLayer(
     baseY: Float,
     amplitude: Float,
     wavelength: Float,
     phase: Float,
     color: Color,
-    foamColor: Color?
+    foamColor: Color?,
+    foamWidth: Float
 ) {
     val w = size.width
     val h = size.height
     val k = (2.0 * PI / wavelength).toFloat()
     val steps = 64
     val dx = w / steps
-
     val wavePath = Path().apply {
         moveTo(0f, h)
         for (i in 0..steps) {
@@ -2653,7 +2479,6 @@ private fun DrawScope.drawSineWaveLayer(
         close()
     }
     drawPath(wavePath, color = color)
-
     if (foamColor != null) {
         val crestPath = Path().apply {
             for (i in 0..steps) {
@@ -2666,11 +2491,10 @@ private fun DrawScope.drawSineWaveLayer(
         drawPath(
             path = crestPath,
             color = foamColor,
-            style = Stroke(width = 4.5f, cap = StrokeCap.Round)
+            style = Stroke(width = foamWidth, cap = StrokeCap.Round)
         )
     }
 }
-
 private fun DrawScope.drawWaveRidingSailboat(
     pivot: Offset,
     tiltDegrees: Float,
@@ -2682,7 +2506,6 @@ private fun DrawScope.drawWaveRidingSailboat(
         translate(left = pivot.x, top = pivot.y)
         rotate(degrees = tiltDegrees, pivot = Offset.Zero)
     }) {
-        // Mast
         val mastHeight = 165f * scale
         drawLine(
             color = Color(0xFF455A64),
@@ -2691,9 +2514,7 @@ private fun DrawScope.drawWaveRidingSailboat(
             strokeWidth = 4.5f * scale,
             cap = StrokeCap.Round
         )
-
         val billow = (12f + 6f * sin(time * 3.2f)) * windIntensity * scale
-
         // Left Rear Mainsail
         val leftSail = Path().apply {
             moveTo(-4f * scale, -mastHeight * 0.95f)
@@ -2705,8 +2526,7 @@ private fun DrawScope.drawWaveRidingSailboat(
             close()
         }
         drawPath(leftSail, color = Color(0xFFCFD8DC))
-
-        // Right Front Jib Sail billowing in the breeze
+        // Right Front Jib Sail
         val rightSail = Path().apply {
             moveTo(3f * scale, -mastHeight * 0.92f)
             quadraticBezierTo(
@@ -2720,7 +2540,6 @@ private fun DrawScope.drawWaveRidingSailboat(
             close()
         }
         drawPath(rightSail, color = Color.White)
-
         // Boat Hull
         val hullPath = Path().apply {
             moveTo(-58f * scale, -10f * scale)
@@ -2730,7 +2549,6 @@ private fun DrawScope.drawWaveRidingSailboat(
             close()
         }
         drawPath(hullPath, color = Color(0xFF37474F))
-        // Hull accent stripe
         drawLine(
             color = Color(0xFFECEFF1),
             start = Offset(-50f * scale, -4f * scale),
@@ -2740,18 +2558,15 @@ private fun DrawScope.drawWaveRidingSailboat(
         )
     }
 }
-
 // ============================================================================
-// SHARED DRAWING HELPERS FOR CLOUDS, STARS, FACES & TREES
+// SHARED DRAWING HELPERS (ALL PROPORTIONED BY UNIFIED SCALE `u`)
 // ============================================================================
-
 private fun DrawScope.drawSleepingCatFace(
     center: Offset,
     scale: Float,
     strokeColor: Color
 ) {
-    val sw = max(2.5f, 3.2f * scale)
-    // Closed peaceful U-shaped eyes
+    val sw = max(2.2f, 3.2f * scale)
     drawArc(
         color = strokeColor,
         startAngle = 15f,
@@ -2770,7 +2585,6 @@ private fun DrawScope.drawSleepingCatFace(
         size = Size(12f * scale, 10f * scale),
         style = Stroke(width = sw, cap = StrokeCap.Round)
     )
-    // Cute nose & inverted-Y mouth
     drawLine(
         color = strokeColor,
         start = Offset(center.x, center.y + 2f * scale),
@@ -2793,42 +2607,44 @@ private fun DrawScope.drawSleepingCatFace(
         cap = StrokeCap.Round
     )
 }
-
-private fun DrawScope.drawPuffyCloudBank(
-    baseY: Float,
+/**
+ * Portrait-aware cloud bank anchored above `horizonY` using `u = min(w, h)` for
+ * puff elevation and radius so clouds remain round and natural on vertical screens.
+ */
+private fun DrawScope.drawPortraitCloudBank(
+    horizonY: Float,
     color: Color,
     driftOffset: Float,
     puffs: List<Triple<Float, Float, Float>>
 ) {
     val w = size.width
-    val h = size.height
+    val u = min(w, size.height)
     drawRect(
         color = color,
-        topLeft = Offset(0f, baseY - h * 0.12f),
-        size = Size(w, h * 0.20f)
+        topLeft = Offset(0f, horizonY - u * 0.22f),
+        size = Size(w, u * 0.28f)
     )
-    puffs.forEach { (xFrac, yFrac, rFrac) ->
+    puffs.forEach { (xFrac, elevU, rU) ->
         drawCircle(
             color = color,
-            radius = min(w, h) * rFrac,
-            center = Offset(w * xFrac + driftOffset, h * yFrac)
+            radius = u * rU,
+            center = Offset(w * xFrac + driftOffset, horizonY - u * elevU)
         )
     }
 }
-
 private fun DrawScope.drawDriftingCloudCluster(
     cx: Float,
     cy: Float,
     scale: Float,
     color: Color
 ) {
-    val w = 130f * scale
-    val h = 44f * scale
+    val cw = 130f * scale
+    val ch = 44f * scale
     drawRoundRect(
         color = color,
-        topLeft = Offset(cx - w * 0.5f, cy),
-        size = Size(w, h),
-        cornerRadius = CornerRadius(h * 0.5f, h * 0.5f)
+        topLeft = Offset(cx - cw * 0.5f, cy),
+        size = Size(cw, ch),
+        cornerRadius = CornerRadius(ch * 0.5f, ch * 0.5f)
     )
     drawCircle(
         color = color,
@@ -2846,7 +2662,6 @@ private fun DrawScope.drawDriftingCloudCluster(
         center = Offset(cx + 42f * scale, cy + 2f * scale)
     )
 }
-
 private fun DrawScope.drawFlatNightCloud(
     center: Offset,
     width: Float,
@@ -2871,7 +2686,6 @@ private fun DrawScope.drawFlatNightCloud(
     }
     drawPath(path, color = color)
 }
-
 private fun DrawScope.drawCrescentMoon(
     center: Offset,
     radius: Float,
@@ -2889,7 +2703,6 @@ private fun DrawScope.drawCrescentMoon(
         center = Offset(center.x + radius * 0.42f, center.y - radius * 0.18f)
     )
 }
-
 private fun DrawScope.drawFourPointSparkle(
     center: Offset,
     radius: Float,
@@ -2909,7 +2722,6 @@ private fun DrawScope.drawFourPointSparkle(
     }
     drawPath(path, color = color)
 }
-
 private fun DrawScope.drawFivePointStar(
     center: Offset,
     outerRadius: Float,
@@ -2927,7 +2739,6 @@ private fun DrawScope.drawFivePointStar(
     path.close()
     drawPath(path, color = color)
 }
-
 private fun DrawScope.drawPineTreeSilhouette(
     base: Offset,
     treeHeight: Float,
@@ -2947,7 +2758,6 @@ private fun DrawScope.drawPineTreeSilhouette(
         drawPath(path, color = color)
     }
 }
-
 private fun lerpColor(start: Color, stop: Color, fraction: Float): Color {
     val f = fraction.coerceIn(0f, 1f)
     return Color(
