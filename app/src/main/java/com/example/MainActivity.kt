@@ -35,6 +35,10 @@ import com.example.ui.components.StillTab
 import com.example.ui.screens.BreatheScreen
 import com.example.ui.screens.DashboardScreen
 import com.example.ui.screens.JournalScreen
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.filled.Close
+import com.example.ui.glass.isLight
 import com.example.ui.screens.ProfileScreen
 import com.example.ui.screens.TherapistScreen
 import com.example.ui.screens.VoiceCallScreen
@@ -102,14 +106,17 @@ class MainActivity : ComponentActivity() {
                 val currentTab by viewModel.currentTab.collectAsState()
                 val callState by viewModel.callState.collectAsState()
                 val isEmoScreenOpen by viewModel.isEmoScreenOpen.collectAsState()
+                val isProfileScreenOpen by viewModel.isProfileScreenOpen.collectAsState()
                 val ambientTheme by viewModel.ambientTheme.collectAsState()
                 val liquidState = rememberLiquidState()
 
-                BackHandler(enabled = callState.isActive || isEmoScreenOpen || currentTab != StillTab.TODAY) {
+                BackHandler(enabled = callState.isActive || isEmoScreenOpen || isProfileScreenOpen || currentTab != StillTab.TODAY) {
                     if (callState.isActive) {
                         viewModel.endCall()
                     } else if (isEmoScreenOpen) {
                         viewModel.setEmoScreenOpen(false)
+                    } else if (isProfileScreenOpen) {
+                        viewModel.setProfileScreenOpen(false)
                     } else {
                         viewModel.setTab(StillTab.TODAY)
                     }
@@ -140,6 +147,20 @@ class MainActivity : ComponentActivity() {
                             com.example.ui.screens.EmoRobotScreen(
                                 onClose = { viewModel.setEmoScreenOpen(false) }
                             )
+                        } else if (isProfileScreenOpen) {
+                            Box(modifier = Modifier.fillMaxSize()) {
+                                ProfileScreen(viewModel = viewModel)
+                                androidx.compose.material3.IconButton(
+                                    onClick = { viewModel.setProfileScreenOpen(false) },
+                                    modifier = Modifier.align(Alignment.TopStart).padding(top = 48.dp, start = 12.dp)
+                                ) {
+                                    androidx.compose.material3.Icon(
+                                        imageVector = androidx.compose.material.icons.Icons.Default.Close,
+                                        contentDescription = "Close Profile",
+                                        tint = if (ambientTheme.isLight) androidx.compose.ui.graphics.Color(0xFF1E2A20) else androidx.compose.ui.graphics.Color.White
+                                    )
+                                }
+                            }
                         } else {
                             Scaffold(
                                 containerColor = Color.Transparent,
@@ -165,7 +186,7 @@ class MainActivity : ComponentActivity() {
                                             viewModel = viewModel,
                                             onNavigateToCall = {}
                                         )
-                                        StillTab.PROFILE -> ProfileScreen(viewModel = viewModel)
+                                        StillTab.GAMES -> com.example.ui.screens.PlaygroundScreen(viewModel = viewModel)
                                     }
                                 }
                             }

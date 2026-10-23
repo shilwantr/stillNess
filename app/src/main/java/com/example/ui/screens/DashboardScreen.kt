@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.FormatQuote
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Opacity
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SelfImprovement
@@ -175,6 +176,22 @@ fun DashboardScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    androidx.compose.material3.IconButton(
+                        onClick = { viewModel.setProfileScreenOpen(true) },
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .background(glassBg)
+                            .border(1.dp, glassBorder, CircleShape)
+                            .size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Menu,
+                            contentDescription = "Profile",
+                            tint = textColor,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(20.dp))
@@ -371,10 +388,7 @@ fun DashboardScreen(
             ) {
                 MoodSelectorCard(
                     selectedMood = selectedMood,
-                    onMoodSelected = { viewModel.selectMood(it) },
-                    onMewMewClick = { showRobotDialog = true },
-                    onGamesClick = { showGamesDialog = true },
-                    onEmoClick = { viewModel.setEmoScreenOpen(true) }
+                    onMoodSelected = { viewModel.selectMood(it) }
                 )
             }
 
@@ -593,82 +607,6 @@ fun DashboardScreen(
             } // End EditableCardWrapper for Walking
 
             Spacer(modifier = Modifier.height(92.dp))
-        }
-
-        // Robot Overlay
-        androidx.compose.animation.AnimatedVisibility(
-            visible = showRobotDialog,
-            enter = androidx.compose.animation.fadeIn(),
-            exit = androidx.compose.animation.fadeOut(),
-            modifier = Modifier.fillMaxSize()
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color(0xFF040B1A).copy(alpha = 0.65f))
-                    .pointerInput(Unit) { detectTapGestures { } } // Block touches from passing through
-            ) {
-                GlassCard(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(24.dp),
-                    cornerRadius = 32.dp
-                ) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        GlassRobot()
-                        
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(16.dp)
-                                .clip(CircleShape)
-                                .clickable { showRobotDialog = false }
-                                .background(Color.White.copy(alpha = 0.1f))
-                                .padding(12.dp)
-                        ) {
-                            Text("Close", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-            }
-        }
-
-        // Games Overlay (full screen card same as mew mew robot)
-        androidx.compose.animation.AnimatedVisibility(
-            visible = showGamesDialog,
-            enter = androidx.compose.animation.fadeIn(),
-            exit = androidx.compose.animation.fadeOut(),
-            modifier = Modifier.fillMaxSize()
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color(0xFF040B1A).copy(alpha = 0.70f))
-                    .pointerInput(Unit) { detectTapGestures { } } // Block touches from passing through
-            ) {
-                GlassCard(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    cornerRadius = 32.dp
-                ) {
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        StillGamesScreen(modifier = Modifier.fillMaxSize())
-
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(16.dp)
-                                .clip(CircleShape)
-                                .clickable { showGamesDialog = false }
-                                .background(Color.White.copy(alpha = 0.15f))
-                                .padding(horizontal = 14.dp, vertical = 8.dp)
-                        ) {
-                            Text("Close", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-            }
         }
 
         // Quick Water Dialog

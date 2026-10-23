@@ -52,6 +52,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.filled.Gamepad
 import com.example.ui.glass.LocalLiquidState
 import com.example.ui.glass.liquidGlassCardShader
 import com.example.ui.theme.CyanBright
@@ -65,7 +66,7 @@ enum class StillTab(val title: String, val icon: ImageVector, val tag: String) {
     BREATHE("Practice", Icons.Default.SelfImprovement, "nav_tab_breathe"),
     TRENDS("Journal", Icons.Default.EditNote, "nav_tab_trends"),
     THERAPISTS("Therapy", Icons.Default.SupportAgent, "nav_tab_therapists"),
-    PROFILE("Profile", Icons.Default.Person, "nav_tab_profile")
+    GAMES("Play", Icons.Default.Gamepad, "nav_tab_games")
 }
 
 @Composable

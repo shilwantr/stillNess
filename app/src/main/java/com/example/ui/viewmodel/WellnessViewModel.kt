@@ -120,6 +120,14 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
     private val _userRole = MutableStateFlow(UserRole.CLIENT)
     val userRole: StateFlow<UserRole> = _userRole.asStateFlow()
 
+    // Profile Screen State
+    private val _isProfileScreenOpen = MutableStateFlow(false)
+    val isProfileScreenOpen: StateFlow<Boolean> = _isProfileScreenOpen.asStateFlow()
+
+    fun setProfileScreenOpen(isOpen: Boolean) {
+        _isProfileScreenOpen.value = isOpen
+    }
+
     // Daily Mood State
     private val _selectedMood = MutableStateFlow(MoodState.CALM)
     val selectedMood: StateFlow<MoodState> = _selectedMood.asStateFlow()

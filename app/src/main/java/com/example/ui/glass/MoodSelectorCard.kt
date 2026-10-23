@@ -60,9 +60,6 @@ enum class MoodState(val label: String, val testId: String) {
 fun MoodSelectorCard(
     selectedMood: MoodState,
     onMoodSelected: (MoodState) -> Unit,
-    onMewMewClick: () -> Unit,
-    onGamesClick: () -> Unit = {},
-    onEmoClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     GlassCard(
@@ -81,7 +78,7 @@ fun MoodSelectorCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                MoodState.values().forEach { mood ->
+                MoodState.entries.forEach { mood ->
                     val isSelected = mood == selectedMood
                     MoodItem(
                         mood = mood,
@@ -90,79 +87,6 @@ fun MoodSelectorCard(
                     )
                 }
             }
-            
-            Spacer(modifier = Modifier.height(4.dp))
-            
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable { onMewMewClick() }
-                        .background(Color.White.copy(alpha = 0.1f))
-                        .padding(horizontal = 14.dp, vertical = 8.dp)
-                ) {
-                    Text("Mew Mew", color = TextWhite, fontSize = 12.sp)
-                }
-
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable { onGamesClick() }
-                        .background(
-                            Brush.horizontalGradient(
-                                listOf(
-                                    Color(0xFFD4AF5A).copy(alpha = 0.24f),
-                                    Color(0xFFFFD54F).copy(alpha = 0.16f)
-                                )
-                            )
-                        )
-                        .border(
-                            1.dp,
-                            Brush.horizontalGradient(
-                                listOf(
-                                    Color(0xFFFFD54F).copy(alpha = 0.6f),
-                                    Color(0xFFD4AF5A).copy(alpha = 0.4f)
-                                )
-                            ),
-                            RoundedCornerShape(12.dp)
-                        )
-                        .padding(horizontal = 14.dp, vertical = 8.dp)
-                ) {
-                    Text("🎮 Games", color = Color(0xFFFFD54F), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                }
-
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable { onEmoClick() }
-                        .background(
-                            Brush.horizontalGradient(
-                                listOf(
-                                    Color(0xFF00E5FF).copy(alpha = 0.22f),
-                                    Color(0xFF00F5D4).copy(alpha = 0.14f)
-                                )
-                            )
-                        )
-                        .border(
-                            1.dp,
-                            Brush.horizontalGradient(
-                                listOf(
-                                    Color(0xFF00E5FF).copy(alpha = 0.6f),
-                                    Color(0xFF00F5D4).copy(alpha = 0.4f)
-                                )
-                            ),
-                            RoundedCornerShape(12.dp)
-                        )
-                        .padding(horizontal = 14.dp, vertical = 8.dp)
-                ) {
-                    Text("🤖 EMO", color = Color(0xFF00F5D4), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(14.dp))
         }
     }
 }
