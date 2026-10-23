@@ -34,6 +34,8 @@ class AgoraRtcManager(private val context: Context) {
     }
 
     private var rtcEngine: RtcEngine? = null
+    @Volatile
+    private var isSessionActive = false
 
     private val _callState = MutableStateFlow(AgoraCallState())
     val callState: StateFlow<AgoraCallState> = _callState.asStateFlow()
@@ -45,7 +47,8 @@ class AgoraRtcManager(private val context: Context) {
                 isJoined = true,
                 channelName = channel ?: "",
                 localUid = uid,
-                connectionQuality = "Waiting for practitioner..."
+                errorMessage = null,
+                connectionQuality = if (_callState.value.remoteUid != null) "Connected • Encrypted HD" else "Connected to Room • Waiting for peer..."
             )
         }
 
@@ -89,11 +92,28 @@ class AgoraRtcManager(private val context: Context) {
 
         override fun onError(err: Int) {
             Log.e(TAG, "Agora RTC Error: code=$err")
-            if (err == Constants.ERR_INVALID_APP_ID) {
-                _callState.value = _callState.value.copy(
-                    errorMessage = "Invalid Agora App ID. Please configure your App ID in AgoraConfig."
+            val (quality, msg) = when (err) {
+                110 -> Pair(
+                    "Token Required (110)",
+                    "Agora Error 110: Project has App Certificate enabled. Please set AGORA_APP_CERTIFICATE in AgoraConfig.kt, or create a project with Testing Mode (App ID only) in Agora Console."
+                )
+                109 -> Pair(
+                    "Token Expired (109)",
+                    "Agora Error 109: Token expired. Please regenerate your token."
+                )
+                Constants.ERR_INVALID_APP_ID -> Pair(
+                    "Invalid App ID",
+                    "Invalid Agora App ID. Please configure your App ID in AgoraConfig."
+                )
+                else -> Pair(
+                    "Error ($err)",
+                    "Agora RTC Error code $err"
                 )
             }
+            _callState.value = _callState.value.copy(
+                connectionQuality = quality,
+                errorMessage = msg
+            )
         }
     }
 
@@ -112,16 +132,21 @@ class AgoraRtcManager(private val context: Context) {
             return false
         }
 
+        val appContext = context.applicationContext
         return try {
             val config = RtcEngineConfig().apply {
-                mContext = context.applicationContext
-                mAppId = appId
+                mContext = appContext
+                mAppId = appId.trim()
                 mEventHandler = rtcEventHandler
                 mChannelProfile = Constants.CHANNEL_PROFILE_COMMUNICATION
             }
             rtcEngine = RtcEngine.create(config).apply {
                 enableAudio()
+                enableLocalAudio(true)
+                setDefaultAudioRoutetoSpeakerphone(true)
                 setEnableSpeakerphone(true)
+                adjustRecordingSignalVolume(100)
+                adjustPlaybackSignalVolume(100)
             }
             Log.d(TAG, "Agora RtcEngine successfully initialized.")
             true
@@ -148,6 +173,13 @@ class AgoraRtcManager(private val context: Context) {
         try {
             val engine = rtcEngine ?: return false
 
+            if (isSessionActive) {
+                try {
+                    engine.leaveChannel()
+                } catch (_: Exception) {}
+            }
+            isSessionActive = true
+
             _callState.value = AgoraCallState(
                 isJoined = false,
                 channelName = channelName,
@@ -156,8 +188,19 @@ class AgoraRtcManager(private val context: Context) {
                 connectionQuality = "Connecting to session..."
             )
 
+            // Audio routing: Ensure loud, clear speakerphone audio
+            engine.enableAudio()
+            engine.enableLocalAudio(true)
+            engine.muteLocalAudioStream(false)
+            engine.setDefaultAudioRoutetoSpeakerphone(true)
+            engine.setEnableSpeakerphone(true)
+            engine.adjustRecordingSignalVolume(100)
+            engine.adjustPlaybackSignalVolume(100)
+
             if (isVideo) {
                 engine.enableVideo()
+                engine.enableLocalVideo(true)
+                engine.muteLocalVideoStream(false)
                 engine.startPreview()
             } else {
                 engine.disableVideo()
@@ -172,10 +215,12 @@ class AgoraRtcManager(private val context: Context) {
                 publishCameraTrack = isVideo
             }
 
-            val result = engine.joinChannel(token, channelName, 0, options)
+            val resolvedToken = token.ifBlank { AgoraConfig.getToken(channelName, 0) }
+            val result = engine.joinChannel(resolvedToken, channelName, 0, options)
             Log.d(TAG, "joinChannel result code=$result for channel=$channelName (isVideo=$isVideo)")
             return result == Constants.ERR_OK
         } catch (e: Exception) {
+            isSessionActive = false
             Log.e(TAG, "Error joining session: ${e.message}", e)
             _callState.value = _callState.value.copy(errorMessage = e.localizedMessage)
             return false
@@ -252,6 +297,8 @@ class AgoraRtcManager(private val context: Context) {
      * Leaves the active Agora session and resets media channels.
      */
     fun leaveSession() {
+        if (!isSessionActive && rtcEngine == null) return
+        isSessionActive = false
         try {
             rtcEngine?.stopPreview()
             rtcEngine?.leaveChannel()
@@ -261,6 +308,29 @@ class AgoraRtcManager(private val context: Context) {
         } finally {
             _callState.value = AgoraCallState(isJoined = false)
         }
+    }
+
+    fun startCameraPreview(surfaceView: SurfaceView) {
+        if (rtcEngine == null && !initEngine()) return
+        val engine = rtcEngine ?: return
+        try {
+            surfaceView.setZOrderMediaOverlay(true)
+            engine.enableVideo()
+            val canvas = VideoCanvas(surfaceView, VideoCanvas.RENDER_MODE_HIDDEN, 0)
+            engine.setupLocalVideo(canvas)
+            engine.startPreview()
+            Log.d(TAG, "startCameraPreview initialized.")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start camera preview: ${e.message}")
+        }
+    }
+
+    fun stopCameraPreview() {
+        try {
+            if (!isSessionActive) {
+                rtcEngine?.stopPreview()
+            }
+        } catch (_: Exception) {}
     }
 
     /**
