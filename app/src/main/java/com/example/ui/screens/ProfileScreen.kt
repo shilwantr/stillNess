@@ -152,18 +152,77 @@ fun ProfileScreen(
                         Spacer(modifier = Modifier.height(12.dp))
 
                         Text(
-                            text = "Sign In with Google",
+                            text = "Choose Your Role",
                             color = TextWhite,
                             fontSize = 17.sp,
                             fontWeight = FontWeight.SemiBold
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Sign in to register as a Client or Therapist.",
+                            text = "Select whether you are joining as a Client or Therapist before signing in. This choice cannot be changed once logged in.",
                             color = TextMuted,
                             fontSize = 12.sp,
                             textAlign = TextAlign.Center
                         )
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            val isClient = userRole == UserRole.CLIENT
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(if (isClient) CyanGlow.copy(alpha = 0.25f) else Color.White.copy(alpha = 0.05f))
+                                    .border(1.dp, if (isClient) GlassBorderActiveCyan else FrostedGlassBorder, RoundedCornerShape(16.dp))
+                                    .clickable { viewModel.setUserRole(UserRole.CLIENT) }
+                                    .padding(vertical = 12.dp, horizontal = 12.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        text = "Client",
+                                        color = if (isClient) TextWhite else TextMuted,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = "Seeking Support",
+                                        color = if (isClient) CyanBright else TextSubtle,
+                                        fontSize = 10.sp
+                                    )
+                                }
+                            }
+
+                            val isTherapist = userRole == UserRole.THERAPIST
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(if (isTherapist) VioletGlow.copy(alpha = 0.25f) else Color.White.copy(alpha = 0.05f))
+                                    .border(1.dp, if (isTherapist) SolidColor(VioletBright) else FrostedGlassBorder, RoundedCornerShape(16.dp))
+                                    .clickable { viewModel.setUserRole(UserRole.THERAPIST) }
+                                    .padding(vertical = 12.dp, horizontal = 12.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        text = "Therapist",
+                                        color = if (isTherapist) TextWhite else TextMuted,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = "Practitioner",
+                                        color = if (isTherapist) VioletBright else TextSubtle,
+                                        fontSize = 10.sp
+                                    )
+                                }
+                            }
+                        }
 
                         Spacer(modifier = Modifier.height(16.dp))
 
@@ -175,7 +234,7 @@ fun ProfileScreen(
                             )
                         } else {
                             GlassButton(
-                                text = "Continue with Google",
+                                text = "Continue with Google as ${if (userRole == UserRole.THERAPIST) "Therapist" else "Client"}",
                                 onClick = { viewModel.signInWithGoogle(context) },
                                 isActive = true,
                                 modifier = Modifier.fillMaxWidth()
@@ -281,67 +340,47 @@ fun ProfileScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Registration Type Selector
-                Text(
-                    text = "Registration Type",
-                    color = TextWhite,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
+                // Account Registration Status (Locked & Immutable)
+                GlassCard(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    cornerRadius = 18.dp
                 ) {
-                    val isClient = userRole == UserRole.CLIENT
-                    Box(
+                    Row(
                         modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(if (isClient) CyanGlow.copy(alpha = 0.25f) else Color.White.copy(alpha = 0.05f))
-                            .border(1.dp, if (isClient) GlassBorderActiveCyan else FrostedGlassBorder, RoundedCornerShape(16.dp))
-                            .clickable { viewModel.setUserRole(UserRole.CLIENT) }
-                            .padding(vertical = 12.dp, horizontal = 14.dp),
-                        contentAlignment = Alignment.Center
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "Client",
-                                color = if (isClient) TextWhite else TextMuted,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "Seeking Support",
-                                color = if (isClient) CyanBright else TextSubtle,
-                                fontSize = 10.sp
+                        Box(
+                            modifier = Modifier
+                                .size(42.dp)
+                                .clip(CircleShape)
+                                .background(if (userRole == UserRole.THERAPIST) VioletGlow.copy(alpha = 0.25f) else CyanGlow.copy(alpha = 0.25f))
+                                .border(1.dp, if (userRole == UserRole.THERAPIST) SolidColor(VioletBright) else GlassBorderActiveCyan, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = null,
+                                tint = if (userRole == UserRole.THERAPIST) VioletBright else CyanBright,
+                                modifier = Modifier.size(24.dp)
                             )
                         }
-                    }
-
-                    val isTherapist = userRole == UserRole.THERAPIST
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(if (isTherapist) VioletGlow.copy(alpha = 0.25f) else Color.White.copy(alpha = 0.05f))
-                            .border(1.dp, if (isTherapist) SolidColor(VioletBright) else FrostedGlassBorder, RoundedCornerShape(16.dp))
-                            .clickable { viewModel.setUserRole(UserRole.THERAPIST) }
-                            .padding(vertical = 12.dp, horizontal = 14.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Therapist",
-                                color = if (isTherapist) TextWhite else TextMuted,
+                                text = if (userRole == UserRole.THERAPIST) "Verified Therapist Account" else "Registered Client Account",
+                                color = TextWhite,
                                 fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.SemiBold
                             )
                             Text(
-                                text = "Practitioner",
-                                color = if (isTherapist) VioletBright else TextSubtle,
-                                fontSize = 10.sp
+                                text = if (userRole == UserRole.THERAPIST)
+                                    "Account role is fixed as Therapist. Manage your practice listing details below."
+                                else
+                                    "Account role is fixed as Client. Discover specialists in the Therapy tab.",
+                                color = TextMuted,
+                                fontSize = 11.sp
                             )
                         }
                     }

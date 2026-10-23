@@ -147,15 +147,21 @@ fun TherapyCallScreen(
                 !callState.isRemoteVideoMuted
 
         if (showRemoteVideo) {
+            val remoteUid = callState.remoteUid
+            var boundRemoteUid by remember { mutableStateOf<Int?>(null) }
             AndroidView(
                 factory = { ctx ->
                     SurfaceView(ctx).apply {
-                        viewModel.agoraRtcManager.setupRemoteVideo(this, callState.remoteUid!!)
+                        if (remoteUid != null) {
+                            boundRemoteUid = remoteUid
+                            viewModel.agoraRtcManager.setupRemoteVideo(this, remoteUid)
+                        }
                     }
                 },
                 update = { view ->
-                    callState.remoteUid?.let { uid ->
-                        viewModel.agoraRtcManager.setupRemoteVideo(view, uid)
+                    if (remoteUid != null && remoteUid != boundRemoteUid) {
+                        boundRemoteUid = remoteUid
+                        viewModel.agoraRtcManager.setupRemoteVideo(view, remoteUid)
                     }
                 },
                 modifier = Modifier.fillMaxSize()
@@ -343,6 +349,34 @@ fun TherapyCallScreen(
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Medium
                 )
+            }
+
+            // Agora Error Banner (e.g. Error 110: Token required)
+            if (!callState.errorMessage.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth(0.92f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(PinkGlow.copy(alpha = 0.20f))
+                        .border(1.dp, PinkGlow.copy(alpha = 0.60f), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = "Error",
+                        tint = PinkGlow,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = callState.errorMessage ?: "",
+                        color = Color(0xFFFECDD3),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
 
             // Agora App ID Config Warning Banner (if unconfigured)
