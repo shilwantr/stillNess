@@ -40,6 +40,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.filled.Close
 import com.example.ui.glass.isLight
 import com.example.ui.screens.ProfileScreen
+import com.example.ui.screens.TherapyCallScreen
+import com.example.ui.screens.WaitingRoomScreen
 import com.example.ui.screens.TherapistScreen
 import com.example.ui.screens.VoiceCallScreen
 import com.example.ui.theme.MidnightDark
@@ -105,15 +107,18 @@ class MainActivity : ComponentActivity() {
 
                 val currentTab by viewModel.currentTab.collectAsState()
                 val callState by viewModel.callState.collectAsState()
+                val waitingRoomAppointment by viewModel.waitingRoomAppointment.collectAsState()
                 val isEmoScreenOpen by viewModel.isEmoScreenOpen.collectAsState()
                 val isProfileScreenOpen by viewModel.isProfileScreenOpen.collectAsState()
                 val isSleepFullScreen by viewModel.isSleepFullScreen.collectAsState()
                 val ambientTheme by viewModel.ambientTheme.collectAsState()
                 val liquidState = rememberLiquidState()
 
-                BackHandler(enabled = callState.isActive || isEmoScreenOpen || isProfileScreenOpen || isSleepFullScreen || currentTab != StillTab.TODAY) {
+                BackHandler(enabled = callState.isActive || waitingRoomAppointment != null || isEmoScreenOpen || isProfileScreenOpen || isSleepFullScreen || currentTab != StillTab.TODAY) {
                     if (callState.isActive) {
                         viewModel.endCall()
+                    } else if (waitingRoomAppointment != null) {
+                        viewModel.leaveWaitingRoom()
                     } else if (isEmoScreenOpen) {
                         viewModel.setEmoScreenOpen(false)
                     } else if (isProfileScreenOpen) {
@@ -142,9 +147,15 @@ class MainActivity : ComponentActivity() {
                         )
 
                         if (callState.isActive) {
-                            VoiceCallScreen(
+                            TherapyCallScreen(
                                 viewModel = viewModel,
                                 onCallEnded = { viewModel.endCall() }
+                            )
+                        } else if (waitingRoomAppointment != null) {
+                            WaitingRoomScreen(
+                                appointment = waitingRoomAppointment!!,
+                                viewModel = viewModel,
+                                onLeave = { viewModel.leaveWaitingRoom() }
                             )
                         } else if (isEmoScreenOpen) {
                             com.example.ui.screens.EmoRobotScreen(
@@ -235,6 +246,7 @@ fun RequestEssentialPermissions() {
             permissionsToRequest.add(Manifest.permission.ACTIVITY_RECOGNITION)
         }
         permissionsToRequest.add(Manifest.permission.RECORD_AUDIO)
+        permissionsToRequest.add(Manifest.permission.CAMERA)
 
         permissionLauncher.launch(permissionsToRequest.toTypedArray())
     }

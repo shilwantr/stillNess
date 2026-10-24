@@ -15,6 +15,9 @@ import com.example.domain.model.Quote
 import com.example.domain.model.Therapist
 import com.example.domain.model.UserRole
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -160,10 +163,58 @@ class WellnessRepository(private val dao: WellnessDao) {
                 appointmentId = appointment.id
             )
         )
+        try {
+            firestore.collection("appointments").document(appointment.id).set(appointment)
+        } catch (e: Exception) {
+            android.util.Log.w("WellnessRepository", "Failed to sync appointment to Firestore: ${e.message}")
+        }
+    }
+
+    suspend fun updateAppointmentCallStatus(appointmentId: String, status: String) {
+        dao.updateAppointmentStatus(appointmentId, status)
+        try {
+            firestore.collection("appointments").document(appointmentId)
+                .set(mapOf("status" to status), com.google.firebase.firestore.SetOptions.merge())
+        } catch (e: Exception) {
+            android.util.Log.w("WellnessRepository", "Failed to update appointment call status in Firestore: ${e.message}")
+        }
     }
 
     suspend fun cancelAppointment(appointmentId: String) {
         dao.updateAppointmentStatus(appointmentId, "CANCELLED")
+        try {
+            firestore.collection("appointments").document(appointmentId)
+                .update("status", "CANCELLED")
+        } catch (e: Exception) {
+            android.util.Log.w("WellnessRepository", "Failed to cancel appointment in Firestore: ${e.message}")
+        }
+    }
+
+    /**
+     * Streams live appointments from Firestore so Client and Therapist stay in sync in real time.
+     */
+    fun syncAppointmentsLive(): Flow<List<AppointmentEntity>> = callbackFlow {
+        val listener = firestore.collection("appointments")
+            .addSnapshotListener { snapshot, error ->
+                if (snapshot != null) {
+                    val apts = snapshot.documents.mapNotNull { doc ->
+                        try {
+                            doc.toObject(AppointmentEntity::class.java)
+                        } catch (e: Exception) {
+                            null
+                        }
+                    }
+                    if (apts.isNotEmpty()) {
+                        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                            for (a in apts) {
+                                dao.insertAppointment(a)
+                            }
+                        }
+                    }
+                    trySend(apts)
+                }
+            }
+        awaitClose { listener.remove() }
     }
 
     suspend fun toggleFavoriteQuote(quote: Quote) {
@@ -235,6 +286,17 @@ class WellnessRepository(private val dao: WellnessDao) {
         }
     }
 
+    fun getLocalUserRole(context: android.content.Context): UserRole {
+        val prefs = context.getSharedPreferences("still_user_prefs", android.content.Context.MODE_PRIVATE)
+        val roleStr = prefs.getString("user_role", UserRole.CLIENT.name)
+        return if (roleStr == "THERAPIST") UserRole.THERAPIST else UserRole.CLIENT
+    }
+
+    fun saveLocalUserRole(context: android.content.Context, role: UserRole) {
+        val prefs = context.getSharedPreferences("still_user_prefs", android.content.Context.MODE_PRIVATE)
+        prefs.edit().putString("user_role", role.name).apply()
+    }
+
     suspend fun saveUserRole(uid: String, role: UserRole) {
         suspendCancellableCoroutine<Unit> { cont ->
             firestore.collection("users").document(uid).set(mapOf("role" to role.name))
@@ -247,16 +309,20 @@ class WellnessRepository(private val dao: WellnessDao) {
         }
     }
 
-    suspend fun getUserRole(uid: String): UserRole {
+    suspend fun getUserRole(uid: String): UserRole? {
         return suspendCancellableCoroutine { cont ->
             firestore.collection("users").document(uid).get()
                 .addOnSuccessListener { doc ->
                     val r = doc.getString("role")
-                    val role = if (r == "THERAPIST") UserRole.THERAPIST else UserRole.CLIENT
+                    val role = when (r) {
+                        "THERAPIST" -> UserRole.THERAPIST
+                        "CLIENT" -> UserRole.CLIENT
+                        else -> null
+                    }
                     if (cont.isActive) cont.resume(role)
                 }
                 .addOnFailureListener {
-                    if (cont.isActive) cont.resume(UserRole.CLIENT)
+                    if (cont.isActive) cont.resume(null)
                 }
         }
     }

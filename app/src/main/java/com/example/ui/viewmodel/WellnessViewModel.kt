@@ -1,4 +1,4 @@
-package com.example.ui.viewmodel
+﻿package com.example.ui.viewmodel
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
@@ -21,6 +21,8 @@ import com.example.domain.model.UserRole
 import com.example.ui.components.ChartPoint
 import com.example.ui.components.StillTab
 import com.example.ui.glass.MoodState
+import com.example.util.AgoraConfig
+import com.example.util.AgoraRtcManager
 import com.example.util.AudioSoundManager
 import com.example.util.NotificationHelper
 import com.example.util.StepSensorManager
@@ -74,14 +76,20 @@ enum class TimeframeView(val label: String) {
 
 data class ActiveCallState(
     val isActive: Boolean = false,
+    val isVideoCall: Boolean = true,
     val isIncoming: Boolean = false,
     val appointment: AppointmentEntity? = null,
     val therapistName: String = "",
     val therapistTitle: String = "",
     val durationSeconds: Int = 0,
     val isMuted: Boolean = false,
+    val isLocalVideoDisabled: Boolean = false,
     val isSpeakerOn: Boolean = true,
-    val connectionQuality: String = "48kHz HD Audio • Encrypted"
+    val connectionQuality: String = "Connecting...",
+    val channelName: String = "",
+    val remoteUid: Int? = null,
+    val isRemoteVideoMuted: Boolean = false,
+    val errorMessage: String? = null
 )
 
 class WellnessViewModel(application: Application) : AndroidViewModel(application) {
@@ -91,6 +99,7 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
     val repository = WellnessRepository(db.wellnessDao())
     val audioSoundManager = AudioSoundManager(application)
     val notificationHelper = NotificationHelper(application)
+    val agoraRtcManager = AgoraRtcManager(application)
 
     private val stepSensorManager: StepSensorManager
 
@@ -117,7 +126,7 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     // Role
-    private val _userRole = MutableStateFlow(UserRole.CLIENT)
+    private val _userRole = MutableStateFlow(repository.getLocalUserRole(application))
     val userRole: StateFlow<UserRole> = _userRole.asStateFlow()
 
     // Profile Screen State
@@ -140,7 +149,7 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
     private val _selectedMood = MutableStateFlow(MoodState.CALM)
     val selectedMood: StateFlow<MoodState> = _selectedMood.asStateFlow()
 
-    // Ambient Background Theme (MS / MIDNIGHT_SAGE as initial theme)
+    // Ambient Background Theme (NT / MIDNIGHT_SAGE as initial theme)
     private val _ambientTheme = MutableStateFlow(com.example.ui.glass.AmbientTheme.MIDNIGHT_SAGE)
     val ambientTheme: StateFlow<com.example.ui.glass.AmbientTheme> = _ambientTheme.asStateFlow()
 
@@ -286,6 +295,10 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
     val callState: StateFlow<ActiveCallState> = _callState.asStateFlow()
     private var callTimerJob: Job? = null
 
+    // Client Waiting Room State
+    private val _waitingRoomAppointment = MutableStateFlow<AppointmentEntity?>(null)
+    val waitingRoomAppointment: StateFlow<AppointmentEntity?> = _waitingRoomAppointment.asStateFlow()
+
     // Fullscreen Emo Robot Screen State
     private val _isEmoScreenOpen = MutableStateFlow(false)
     val isEmoScreenOpen: StateFlow<Boolean> = _isEmoScreenOpen.asStateFlow()
@@ -310,7 +323,9 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
                     viewModelScope.launch {
                         try {
                             val role = repository.getUserRole(user.uid)
-                            _userRole.value = role
+                            if (role != null) {
+                                _userRole.value = role
+                            }
                         } catch (_: Exception) {}
                     }
                 }
@@ -324,6 +339,22 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
             repository.seedInitialDataIfEmpty()
         }
 
+        viewModelScope.launch {
+            agoraRtcManager.callState.collect { agoraState ->
+                if (_callState.value.isActive) {
+                    _callState.value = _callState.value.copy(
+                        remoteUid = agoraState.remoteUid,
+                        isRemoteVideoMuted = agoraState.isRemoteVideoMuted,
+                        isMuted = agoraState.isLocalAudioMuted,
+                        isLocalVideoDisabled = agoraState.isLocalVideoMuted,
+                        isSpeakerOn = agoraState.isSpeakerOn,
+                        connectionQuality = if (agoraState.remoteUid != null) agoraState.connectionQuality else _callState.value.connectionQuality,
+                        errorMessage = agoraState.errorMessage
+                    )
+                }
+            }
+        }
+
         // Sync favorite state when favoriteQuotes emits
         viewModelScope.launch {
             favoriteQuotes.collect { favList ->
@@ -331,6 +362,25 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
                 val isFav = favList.any { it.id == curr.id }
                 if (curr.isFavorite != isFav) {
                     _currentQuote.value = curr.copy(isFavorite = isFav)
+                }
+            }
+        }
+
+        // Real-time synchronization of appointments between Client and Therapist
+        viewModelScope.launch {
+            repository.syncAppointmentsLive().collect { firestoreApts ->
+                val currentWaiting = _waitingRoomAppointment.value
+                if (currentWaiting != null) {
+                    val matching = firestoreApts.firstOrNull { it.id == currentWaiting.id }
+                    if (matching != null) {
+                        if (matching.status == "IN_CALL") {
+                            // Practitioner admitted client into call!
+                            _waitingRoomAppointment.value = null
+                            startCallWithAppointment(matching)
+                        } else {
+                            _waitingRoomAppointment.value = matching
+                        }
+                    }
                 }
             }
         }
@@ -369,6 +419,7 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
 
     override fun onCleared() {
         super.onCleared()
+        agoraRtcManager.destroy()
         stepSensorManager.stopListening()
         audioSoundManager.release()
         breathingJob?.cancel()
@@ -423,8 +474,16 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
                     auth.signInWithCredential(authCredential).awaitTask()
                     _currentUser.value = auth.currentUser
                     auth.currentUser?.let { user ->
-                        val role = repository.getUserRole(user.uid)
-                        _userRole.value = role
+                        val remoteRole = repository.getUserRole(user.uid)
+                        if (remoteRole != null) {
+                            _userRole.value = remoteRole
+                            repository.saveLocalUserRole(appContext, remoteRole)
+                        } else {
+                            // User selected role before login: save to Firestore & SharedPreferences
+                            val chosenRole = _userRole.value
+                            repository.saveUserRole(user.uid, chosenRole)
+                            repository.saveLocalUserRole(appContext, chosenRole)
+                        }
                     }
                 } else {
                     _authError.value = "Unrecognized credential type"
@@ -449,6 +508,7 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
 
     fun setUserRole(role: UserRole) {
         _userRole.value = role
+        repository.saveLocalUserRole(appContext, role)
         val user = _currentUser.value ?: return
         viewModelScope.launch {
             try {
@@ -493,6 +553,7 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
                 )
                 repository.saveTherapistProfile(therapist)
                 repository.saveUserRole(user.uid, UserRole.THERAPIST)
+                repository.saveLocalUserRole(appContext, UserRole.THERAPIST)
                 _userRole.value = UserRole.THERAPIST
                 _therapistSaveSuccess.value = "Registered successfully! You are now listed in the Therapy section."
                 audioSoundManager.triggerSubtleHaptic()
@@ -562,7 +623,7 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
         if (_isBreathingActive.value && !_isBreathingPaused.value) return
         if (_isBreathingPaused.value) {
             _isBreathingPaused.value = false
-            notificationHelper.showPlaybackNotification(_breathingMode.value.title, "Active Breathing Practice • Chimes On", isPlaying = true)
+            notificationHelper.showPlaybackNotification(_breathingMode.value.title, "Active Breathing Practice ΓÇó Chimes On", isPlaying = true)
             runBreathingCycle()
             return
         }
@@ -575,7 +636,7 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
         _orbExpansionFraction.value = 0.28f
         audioSoundManager.resetBreathingChimeMelody()
         audioSoundManager.playBreathingPhaseChime()
-        notificationHelper.showPlaybackNotification(_breathingMode.value.title, "Active Breathing Practice • Chimes On", isPlaying = true)
+        notificationHelper.showPlaybackNotification(_breathingMode.value.title, "Active Breathing Practice ΓÇó Chimes On", isPlaying = true)
         runBreathingCycle()
     }
 
@@ -778,7 +839,7 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
 
         notificationHelper.showPlaybackNotification(
             title = track.title,
-            subtitle = "Playing • ${track.category} (${track.durationMinutes} min)",
+            subtitle = "Playing ΓÇó ${track.category} (${track.durationMinutes} min)",
             isPlaying = true
         )
 
@@ -848,7 +909,7 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
             }
             notificationHelper.showPlaybackNotification(
                 title = sound.name,
-                subtitle = "Playing • Calming Soundscape",
+                subtitle = "Playing ΓÇó Calming Soundscape",
                 isPlaying = true
             )
         }
@@ -859,49 +920,131 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
         audioSoundManager.setVolume(vol)
     }
 
-    // Voice Calling between User & Therapist
-    fun initiateCall(therapist: Therapist, appointment: AppointmentEntity? = null) {
+    // Voice & Video Calling between User & Therapist via Agora RTC
+    fun startVideoCall(appointment: AppointmentEntity) {
+        val channelName = AgoraConfig.getChannelName(appointment.id)
         _callState.value = ActiveCallState(
             isActive = true,
-            isIncoming = false,
-            appointment = appointment,
-            therapistName = therapist.name,
-            therapistTitle = therapist.title,
-            durationSeconds = 0,
-            isMuted = false,
-            isSpeakerOn = true
-        )
-        startCallTimer()
-    }
-
-    fun startCallWithAppointment(appointment: AppointmentEntity) {
-        _callState.value = ActiveCallState(
-            isActive = true,
-            isIncoming = false,
+            isVideoCall = true,
             appointment = appointment,
             therapistName = appointment.therapistName,
             therapistTitle = appointment.therapistTitle,
+            channelName = channelName,
             durationSeconds = 0,
             isMuted = false,
-            isSpeakerOn = true
+            isLocalVideoDisabled = false,
+            isSpeakerOn = true,
+            connectionQuality = "Connecting to Agora Video..."
         )
+        viewModelScope.launch {
+            repository.updateAppointmentCallStatus(appointment.id, "IN_CALL")
+        }
+        agoraRtcManager.joinSession(channelName = channelName, isVideo = true)
         startCallTimer()
     }
 
+    fun startVoiceCall(appointment: AppointmentEntity) {
+        val channelName = AgoraConfig.getChannelName(appointment.id)
+        _callState.value = ActiveCallState(
+            isActive = true,
+            isVideoCall = false,
+            appointment = appointment,
+            therapistName = appointment.therapistName,
+            therapistTitle = appointment.therapistTitle,
+            channelName = channelName,
+            durationSeconds = 0,
+            isMuted = false,
+            isLocalVideoDisabled = true,
+            isSpeakerOn = true,
+            connectionQuality = "Connecting to Agora Voice..."
+        )
+        viewModelScope.launch {
+            repository.updateAppointmentCallStatus(appointment.id, "IN_CALL")
+        }
+        agoraRtcManager.joinSession(channelName = channelName, isVideo = false)
+        startCallTimer()
+    }
+
+    fun initiateCall(therapist: Therapist, appointment: AppointmentEntity? = null) {
+        val clientDisplayName = currentUser.value?.displayName ?: "Client"
+        val apt = appointment ?: AppointmentEntity(
+            id = "room_" + therapist.id.ifEmpty { "elena_vance" },
+            therapistId = therapist.id,
+            therapistName = therapist.name,
+            therapistTitle = therapist.title,
+            clientName = clientDisplayName,
+            dateSlot = "Instant Consultation",
+            timeSlot = "Now",
+            status = "IN_CALL",
+            fee = therapist.hourlyRate,
+            callEligible = true
+        )
+        viewModelScope.launch {
+            try {
+                repository.bookAppointment(apt, "INSTANT_CALL")
+            } catch (_: Exception) {}
+        }
+        startVideoCall(apt)
+    }
+
+    fun startCallWithAppointment(appointment: AppointmentEntity) {
+        startVideoCall(appointment)
+    }
+
+    fun enterWaitingRoom(appointment: AppointmentEntity) {
+        _waitingRoomAppointment.value = appointment
+        viewModelScope.launch {
+            repository.updateAppointmentCallStatus(appointment.id, "WAITING")
+        }
+        audioSoundManager.triggerSubtleHaptic()
+    }
+
+    fun leaveWaitingRoom() {
+        val apt = _waitingRoomAppointment.value
+        _waitingRoomAppointment.value = null
+        if (apt != null) {
+            viewModelScope.launch {
+                repository.updateAppointmentCallStatus(apt.id, "UPCOMING")
+            }
+        }
+        audioSoundManager.triggerSubtleHaptic()
+    }
+
     fun toggleCallMute() {
-        val curr = _callState.value
-        _callState.value = curr.copy(isMuted = !curr.isMuted)
+        val newMute = !_callState.value.isMuted
+        agoraRtcManager.toggleMicrophone(newMute)
+        _callState.value = _callState.value.copy(isMuted = newMute)
+        audioSoundManager.triggerSubtleHaptic()
+    }
+
+    fun toggleCallVideo() {
+        val newDisabled = !_callState.value.isLocalVideoDisabled
+        agoraRtcManager.toggleLocalVideo(newDisabled)
+        _callState.value = _callState.value.copy(isLocalVideoDisabled = newDisabled)
+        audioSoundManager.triggerSubtleHaptic()
+    }
+
+    fun switchCamera() {
+        agoraRtcManager.switchCamera()
         audioSoundManager.triggerSubtleHaptic()
     }
 
     fun toggleCallSpeaker() {
-        val curr = _callState.value
-        _callState.value = curr.copy(isSpeakerOn = !curr.isSpeakerOn)
+        val newSpeaker = !_callState.value.isSpeakerOn
+        agoraRtcManager.toggleSpeakerphone(newSpeaker)
+        _callState.value = _callState.value.copy(isSpeakerOn = newSpeaker)
         audioSoundManager.triggerSubtleHaptic()
     }
 
     fun endCall() {
+        val apt = _callState.value.appointment
         callTimerJob?.cancel()
+        agoraRtcManager.leaveSession()
+        if (apt != null) {
+            viewModelScope.launch {
+                repository.updateAppointmentCallStatus(apt.id, "COMPLETED")
+            }
+        }
         _callState.value = ActiveCallState(isActive = false)
         audioSoundManager.triggerSubtleHaptic()
     }
@@ -926,7 +1069,7 @@ class WellnessViewModel(application: Application) : AndroidViewModel(application
                 therapistId = therapist.id,
                 therapistName = therapist.name,
                 therapistTitle = therapist.title,
-                clientName = "You",
+                clientName = currentUser.value?.displayName ?: "Client",
                 dateSlot = slot.substringBefore(" "),
                 timeSlot = slot.substringAfter(" "),
                 status = "UPCOMING",

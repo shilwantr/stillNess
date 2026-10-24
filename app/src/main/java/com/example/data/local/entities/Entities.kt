@@ -37,15 +37,15 @@ data class WellnessSessionEntity(
 
 @Entity(tableName = "appointments")
 data class AppointmentEntity(
-    @PrimaryKey val id: String,
-    val therapistId: String,
-    val therapistName: String,
-    val therapistTitle: String,
-    val clientName: String,
-    val dateSlot: String,
-    val timeSlot: String,
-    val status: String, // "UPCOMING", "COMPLETED", "CANCELLED"
-    val fee: Double,
+    @PrimaryKey val id: String = "",
+    val therapistId: String = "",
+    val therapistName: String = "",
+    val therapistTitle: String = "",
+    val clientName: String = "",
+    val dateSlot: String = "",
+    val timeSlot: String = "",
+    val status: String = "UPCOMING", // "UPCOMING", "IN_CALL", "COMPLETED", "CANCELLED"
+    val fee: Double = 0.0,
     val callEligible: Boolean = true
 )
 
